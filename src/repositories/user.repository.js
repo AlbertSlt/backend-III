@@ -1,7 +1,7 @@
 import UserModel from '../models/user.model.js';
 
 class UserRepository {
-    static async find(filters = {}) {
+    async find(filters = {}) {
         return await UserModel.find(filters);
     }
 
@@ -22,4 +22,4 @@ class UserRepository {
     }
 }
 
-export default UserRepository;
+export default new UserRepository;

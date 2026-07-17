@@ -8,7 +8,7 @@ class UserController {
         }
         catch (error) {
             console.warn("Error al obtener los usuarios", error);
-            res.status(500).json({ statusCode: 500, message: "Internal Server Error" });
+            res.status(500).json({ statusCode: 500, message: "Error interno del servidor" });
         }
     }
 
@@ -22,7 +22,7 @@ class UserController {
             res.status(200).json(user);
         } catch (error) {
             console.warn("Error al obtener el usuario", error);
-            res.status(500).json({ statusCode: 500, message: "Internal Server Error" });
+            res.status(500).json({ statusCode: 500, message: "Error interno del servidor" });
         }
     }
 
@@ -32,7 +32,7 @@ class UserController {
             res.status(201).json(user);
         } catch (error) {
             console.warn("Error al crear el usuario", error);
-            res.status(500).json({ statusCode: 500, message: "Internal Server Error" });
+            res.status(500).json({ statusCode: 500, message: "Error interno del servidor" });
         }
     }
 
@@ -46,7 +46,7 @@ class UserController {
             res.status(200).json(user);
         } catch (error) {
             console.warn("Error al actualizar el usuario", error);
-            res.status(500).json({ statusCode: 500, message: "Internal Server Error" });
+            res.status(500).json({ statusCode: 500, message: "Error interno del servidor" });
         }
     }
 
@@ -60,7 +60,7 @@ class UserController {
             res.status(200).json({ message: "Usuario eliminado" });
         } catch (error) {
             console.warn("Error al eliminar el usuario", error);
-            res.status(500).json({ statusCode: 500, message: "Internal Server Error" });
+            res.status(500).json({ statusCode: 500, message: "Error interno del servidor" });
         }
     }
 
