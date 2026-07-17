@@ -1,13 +1,12 @@
-import express from "express";
+import { Router } from 'express';
+import ProductController from '../controllers/product.controller.js';
 
-const app = express();
+const router = Router();
 
-app.use(express.json());   
+router.get('/', ProductController.getAllProducts);
+router.get('/:id', ProductController.getProductById);
+router.post('/', ProductController.createProduct);
+router.put('/:id', ProductController.updateProduct);
+router.delete('/:id', ProductController.deleteProduct);
 
-app.get("health", (req, res) => {
-    res.send("ShipNow API v1 - Corriendo");
-});
-
-app.listen(3000, () => {
-    console.log("Servidor escuchando en el puerto 3000");
-})
+export default router;

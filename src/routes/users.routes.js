@@ -1,14 +1,11 @@
 import express from "express";
 import UserController from "../controllers/user.controller.js";
+import { validateUser } from "../middlewares/user.middleware.js";
 
 const router = express.Router();
 
-//Querys para traer segun nombre, role (agregar)
+//Querys para traer segun nombre, role 
 router.get("/", UserController.getAll);
-
-router.get("/", (req, res) => {
-    res.send("Ruta de usuarios");
-});
 
 //HASTA ACA CLASE 1
 
@@ -17,12 +14,12 @@ router.get("/:id", (req, res) => {
     res.send(`Usuario con ID: ${id}`);
 });
 
-router.post("/", (req, res) => {
+router.post("/", validateUser, (req, res) => {
     const { name, email } = req.body;
     res.send(`Usuario creado: ${name} - ${email}`);
 });
 
-router.put("/:id", (req, res) => {
+router.put("/:id", validateUser, (req, res) => {
     const { id } = req.params;
     const { name, email } = req.body;
     res.send(`Usuario con ID: ${id} actualizado a: ${name} - ${email}`);
