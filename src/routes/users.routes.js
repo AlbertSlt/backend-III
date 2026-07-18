@@ -4,10 +4,10 @@ import { validateUser } from "../middlewares/user.middleware.js";
 
 const router = express.Router();
 
-router.get("/", UserController.getAll);
-router.get("/:id", UserController.getById);
-router.post("/", validateUser, UserController.create);
-router.put("/:id", validateUser, UserController.update);
-router.delete("/:id", UserController.delete);
+router.get("/", UserController.getAllUsers);
+router.get("/:id", UserController.getUserById);
+router.post("/", validateUser, UserController.createUser);
+router.put("/:id", validateUser, UserController.updateUser);
+router.delete("/:id", UserController.deleteUser);
 
 export default router;

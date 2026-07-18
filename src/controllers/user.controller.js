@@ -1,9 +1,9 @@
 import UserService from "../services/user.service.js";
 
 class UserController {
-    static async getAll(req, res) {
+    static async getAllUsers(req, res) {
         try {
-            const users = await UserService.getAll(req.query);
+            const users = await UserService.getAllUsers(req.query);
             res.status(200).json(users);
         }
         catch (error) {
@@ -12,12 +12,12 @@ class UserController {
         }
     }
 
-    static async getById(req, res) {
+    static async getUserById(req, res) {
         try {
             const { id } = req.params;
-            const user = await UserService.getById(id);
+            const user = await UserService.getUserById(id);
             if (!user) {
-                return res.status(404).json({ message: "Usuario no encontrado" });
+                return res.status(404).json({ statusCode: 404, message: "Usuario no encontrado" });
             }
             res.status(200).json(user);
         } catch (error) {
@@ -26,9 +26,9 @@ class UserController {
         }
     }
 
-    static async create(req, res) {
+    static async createUser(req, res) {
         try {
-            const user = await UserService.create(req.body);
+            const user = await UserService.createUser(req.body);
             res.status(201).json(user);
         } catch (error) {
             console.warn("Error al crear el usuario", error);
@@ -36,12 +36,12 @@ class UserController {
         }
     }
 
-    static async update(req, res) {
+    static async updateUser(req, res) {
         try {
             const { id } = req.params;
-            const user = await UserService.update(id, req.body);
+            const user = await UserService.updateUser(id, req.body);
             if (!user) {
-                return res.status(404).json({ message: "Usuario no encontrado" });
+                return res.status(404).json({ statusCode: 404, message: "Usuario no encontrado" });
             }
             res.status(200).json(user);
         } catch (error) {
@@ -50,14 +50,14 @@ class UserController {
         }
     }
 
-    static async delete(req, res) {
+    static async deleteUser(req, res) {
         try {
             const { id } = req.params;
-            const user = await UserService.delete(id);
+            const user = await UserService.deleteUser(id);
             if (!user) {
-                return res.status(404).json({ message: "Usuario no encontrado" });
+                return res.status(404).json({ statusCode: 404, message: "Usuario no encontrado" });
             }
-            res.status(200).json({ message: "Usuario eliminado" });
+            res.status(200).json({ statusCode: 200, message: "Usuario eliminado" });
         } catch (error) {
             console.warn("Error al eliminar el usuario", error);
             res.status(500).json({ statusCode: 500, message: "Error interno del servidor" });

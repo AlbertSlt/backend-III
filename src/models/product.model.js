@@ -12,11 +12,13 @@ const productSchema = new mongoose.Schema({
     },
     price: {
         type: Number,
-        required: true
+        required: true,
+        min: [0, 'El precio no puede ser negativo']
     },
     stock: {
         type: Number,
-        required: true
+        required: true,
+        min: [0, 'El stock no puede ser negativo']
     },
     status: {
         type: String,

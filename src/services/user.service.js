@@ -1,23 +1,23 @@
 import UserRepository from "../repositories/user.repository.js";
 
 class UserService {
-    async getAll(query) {
+    async getAllUsers(query) {
         return await UserRepository.find(query);
     }
 
-    async getById(id) {
+    async getUserById(id) {
         return await UserRepository.getById(id);
     }
 
-    async create(userData) {
+    async createUser(userData) {
         return await UserRepository.create(userData);
     }
 
-    async update(id, updateData) {
+    async updateUser(id, updateData) {
         return await UserRepository.update(id, updateData);
     }
 
-    async delete(id) {
+    async deleteUser(id) {
         return await UserRepository.delete(id);
     }
 }

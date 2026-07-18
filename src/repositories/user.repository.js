@@ -1,12 +1,14 @@
 import UserModel from '../models/user.model.js';
 
+const DEFAULT_PROJECTION = '-__v';
+
 class UserRepository {
     async find(filters = {}) {
-        return await UserModel.find(filters);
+        return await UserModel.find(filters).select(DEFAULT_PROJECTION);
     }
 
     async getById(id) {
-        return await UserModel.findById(id);
+        return await UserModel.findById(id).select(DEFAULT_PROJECTION);
     }
 
     async create(userData) {
@@ -14,7 +16,10 @@ class UserRepository {
     }
 
     async update(id, updateData) {
-        return await UserModel.findByIdAndUpdate(id, updateData, { new: true });
+        return await UserModel.findByIdAndUpdate(id, updateData, {
+            new: true,
+            runValidators: true,
+        }).select(DEFAULT_PROJECTION);
     }
 
     async delete(id) {
@@ -22,4 +27,4 @@ class UserRepository {
     }
 }
 
-export default new UserRepository;
+export default new UserRepository();

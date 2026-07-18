@@ -18,9 +18,7 @@ class ProductController {
         try {
             const product = await ProductService.getProductById(req.params.id);
             if (!product) {
-                return res.status(404).json({ 
-                    error: 'Producto no encontrado' 
-                });
+                return res.status(404).json({ statusCode: 404, message: 'Producto no encontrado' });
             }
             res.status(200).json(product);
         } catch (error) {
@@ -49,9 +47,7 @@ class ProductController {
         try {
             const updatedProduct = await ProductService.updateProduct(req.params.id, req.body);
             if (!updatedProduct) {
-                return res.status(404).json({ 
-                    error: 'Producto no encontrado' 
-                });
+                return res.status(404).json({ statusCode: 404, message: 'Producto no encontrado' });
             }
             res.status(200).json(updatedProduct);
         } catch (error) {
@@ -67,12 +63,11 @@ class ProductController {
         try {
             const deletedProduct = await ProductService.deleteProduct(req.params.id);
             if (!deletedProduct) {
-                return res.status(404).json({ 
-                    error: 'Producto no encontrado' 
-                });
+                return res.status(404).json({ statusCode: 404, message: 'Producto no encontrado' });
             }
-            res.status(200).json({ 
-                message: 'Producto eliminado correctamente' 
+            res.status(200).json({
+                statusCode: 200,
+                message: 'Producto eliminado correctamente'
             });
         } catch (error) {
             console.error("Error al eliminar producto:", error);
