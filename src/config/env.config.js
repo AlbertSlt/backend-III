@@ -12,4 +12,7 @@ export const config = {
     PORT: process.env.PORT, //|| 3000,
     MONGODB_URI: process.env.MONGODB_URI, // || "mongodb://localhost:27017/mydatabase",
     NODE_ENV: process.env.NODE_ENV, // || "development",
+    SEED_ADMIN: process.env.SEED_ADMIN === 'true',
+    ADMIN_EMAIL: process.env.ADMIN_EMAIL,
+    ADMIN_PASSWORD: process.env.ADMIN_PASSWORD,
 };

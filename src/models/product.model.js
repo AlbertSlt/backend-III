@@ -15,6 +15,11 @@ const productSchema = new mongoose.Schema({
         required: true,
         min: [0, 'El precio no puede ser negativo']
     },
+    code: {
+        type: String,
+        required: true,
+        unique: true
+    },
     stock: {
         type: Number,
         required: true,
@@ -24,6 +29,10 @@ const productSchema = new mongoose.Schema({
         type: String,
         enum: Object.values(PRODUCT_STATUS),
         default: PRODUCT_STATUS.AVAILABLE
+    },
+    thumbnail: {
+        type: [String],
+        default: []
     }
 }, {
     timestamps: true
