@@ -5,11 +5,12 @@ import express from "express";
 
 import { config } from "./config/env.config.js";
 import { connectDB } from "./config/db.js";
+import { seedAdmin } from "./utils/seedAdmin.js";
 
+import mockRoutes from "./mocks/routes/mock.routes.js";
 import userRoutes from "./routes/users.routes.js";
-import UserService from "./services/user.service.js";
 import productRoutes from "./routes/products.routes.js";
-import { USER_ROLES } from "./utils/constants.js";
+import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
 
 const app = express();
 
@@ -17,33 +18,31 @@ app.use(express.json());
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 
+if (config.NODE_ENV !== "production") {
+    app.use("/api/mocks", mockRoutes);
+}
+
 app.get("/", (req, res) => {
     res.send("ShipNow API v1 - Corriendo");
 });
 
+
+
+// Los middlewares de error SIEMPRE van al final, después de todas las rutas:
+// primero notFoundHandler (rutas que no matchean ningún router),
+// y por último errorHandler (captura cualquier error lanzado en el camino).
+app.use(notFoundHandler);
+app.use(errorHandler);
+
 const startServer = async () => {
     await connectDB();
-
-    try {
-        const adminExists = await UserService.getAllUsers({ email: "admin@shipnow.com" });
-        if (!adminExists.length) {
-            await UserService.createUser({
-                first_name: "Admin",
-                last_name: "Principal",
-                email: "admin@shipnow.com",
-                password: "adminpassword",
-                role: USER_ROLES.ADMIN
-            });
-
-            console.log("Usuario Admin creado - prueba");
-        }
-    } catch (error) {
-        console.error("Error al crear el usuario Admin", error);
-    }
-
+    await seedAdmin();
     app.listen(config.PORT, () => {
         console.log(`Servidor escuchando en el puerto ${config.PORT}`);
     });
 };
 
 startServer();
+
+
+//localhost:3000/health ?!! hacer

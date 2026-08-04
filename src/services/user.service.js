@@ -1,4 +1,5 @@
 import UserRepository from "../repositories/user.repository.js";
+import { AppError, ERROR_CODES } from "../errors/index.js";
 
 class UserService {
     async getAllUsers(query) {
@@ -6,7 +7,11 @@ class UserService {
     }
 
     async getUserById(id) {
-        return await UserRepository.getById(id);
+        const user = await UserRepository.getById(id);
+        if (!user) {
+            throw new AppError(ERROR_CODES.USER_NOT_FOUND);
+        }
+        return user;
     }
 
     async createUser(userData) {
@@ -14,11 +19,19 @@ class UserService {
     }
 
     async updateUser(id, updateData) {
-        return await UserRepository.update(id, updateData);
+        const user = await UserRepository.update(id, updateData);
+        if (!user) {
+            throw new AppError(ERROR_CODES.USER_NOT_FOUND);
+        }
+        return user;
     }
 
     async deleteUser(id) {
-        return await UserRepository.delete(id);
+        const user = await UserRepository.delete(id);
+        if (!user) {
+            throw new AppError(ERROR_CODES.USER_NOT_FOUND);
+        }
+        return user;
     }
 }
 

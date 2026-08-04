@@ -1,5 +1,6 @@
 import ProductRepository from '../repositories/product.repository.js';
 import { PRODUCT_STATUS } from '../utils/constants.js';
+import { AppError, ERROR_CODES } from '../errors/index.js';
 
 class ProductService {
     async getAllProducts() {
@@ -8,7 +9,11 @@ class ProductService {
     }
 
     async getProductById(id) {
-        return await ProductRepository.getById(id);
+        const product = await ProductRepository.getById(id);
+        if (!product) {
+            throw new AppError(ERROR_CODES.PRODUCT_NOT_FOUND);
+        }
+        return product;
     }
 
     async createProduct(productData) {
@@ -16,11 +21,19 @@ class ProductService {
     }
 
     async updateProduct(id, updateData) {
-        return await ProductRepository.update(id, updateData);
+        const product = await ProductRepository.update(id, updateData);
+        if (!product) {
+            throw new AppError(ERROR_CODES.PRODUCT_NOT_FOUND);
+        }
+        return product;
     }
 
     async deleteProduct(id) {
-        return await ProductRepository.delete(id);
+        const product = await ProductRepository.delete(id);
+        if (!product) {
+            throw new AppError(ERROR_CODES.PRODUCT_NOT_FOUND);
+        }
+        return product;
     }
 }
 
