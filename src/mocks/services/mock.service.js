@@ -10,8 +10,7 @@ import MockRepository from '../repositories/mock.repository.js';
 import { AppError, ERROR_CODES } from '../../errors/index.js';
 
 class MockService {
-    // ⬅️ Sin `static`: ahora son métodos de instancia, igual que en
-    // UserService (getAllUsers, createUser, etc.)
+
     generateMockUsers = (count, role = USER_ROLES.USER) => {
         const users = Array.from({ length: count }, () => {
             return {
@@ -72,38 +71,54 @@ class MockService {
             };
         });
     };
+insertMockData = async ({ users = 5, couriers = 3, orders = 5, deliveries = 5 } = {}) => {
+        try {
+            const insertedUsers = await MockRepository.insertUsers(
+                this.generateMockUsers(users, USER_ROLES.USER)
+            );
+            const insertedCouriers = await MockRepository.insertUsers(
+                this.generateMockUsers(couriers, USER_ROLES.COURIER)
+            );
 
+            const userIds = insertedUsers.map((user) => user._id);
+            const courierIds = insertedCouriers.map((courier) => courier._id);
 
-    insertMockData = async ({ users = 5, couriers = 3, orders = 5, deliveries = 5 } = {}) => {
-        const insertedUsers = await MockRepository.insertUsers(
-            this.generateMockUsers(users, USER_ROLES.USER)
-        );
-        const insertedCouriers = await MockRepository.insertUsers(
-            this.generateMockUsers(couriers, USER_ROLES.COURIER)
-        );
+            const insertedOrders = await MockRepository.insertOrders(
+                this.generateMockOrders(orders, userIds)
+            );
+            const orderIds = insertedOrders.map((order) => order._id);
 
-        const userIds = insertedUsers.map((user) => user._id);
-        const courierIds = insertedCouriers.map((courier) => courier._id);
+            const insertedDeliveries = await MockRepository.insertDeliveries(
+                this.generateMockDeliveries(deliveries, orderIds, courierIds)
+            );
 
-        const insertedOrders = await MockRepository.insertOrders(
-            this.generateMockOrders(orders, userIds)
-        );
-        const orderIds = insertedOrders.map((order) => order._id);
-
-        const insertedDeliveries = await MockRepository.insertDeliveries(
-            this.generateMockDeliveries(deliveries, orderIds, courierIds)
-        );
-
-        return {
-            users: insertedUsers.length,
-            couriers: insertedCouriers.length,
-            orders: insertedOrders.length,
-            deliveries: insertedDeliveries.length
-        };
+            return {
+                users: insertedUsers.length,
+                couriers: insertedCouriers.length,
+                orders: insertedOrders.length,
+                deliveries: insertedDeliveries.length
+            };
+        } catch (error) {
+            throw new AppError(
+                ERROR_CODES.MOCK_GENERATION_ERROR,
+                'Ocurrió un error al generar o insertar los datos de prueba',
+                error.message
+            );
+        }
     };
+
     saveMockProducts = async (products) => {
-        return await MockRepository.insertProducts(products);
+        try {
+            return await MockRepository.insertProducts(products);
+        } catch (error) {
+            throw new AppError(
+                ERROR_CODES.MOCK_GENERATION_ERROR,
+                'Ocurrió un error al guardar los productos generados',
+                error.message
+            );
+        }
     };
+    
 }
 
 export default new MockService();

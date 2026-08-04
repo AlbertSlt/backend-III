@@ -92,6 +92,6 @@ Las rutas y controllers ya no arman respuestas de error a mano: los `services` y
 
 ### Probar casos inválidos (con Postman)
 
-- `GET http://localhost:3000/api/users/00000000000000000000` → recurso inexistente → `404 USER_NOT_FOUND`
+- `GET http://localhost:3000/api/users/000000000000000000000000` → recurso inexistente → `404 USER_NOT_FOUND`
 - `GET http://localhost:3000/api/mocks/mocking-users?count=-5` → dato inválido → `400 INVALID_MOCK_AMOUNT`
 - `GET http://localhost:3000/api/no-existe` → ruta inexistente → `404 ROUTE_NOT_FOUND`

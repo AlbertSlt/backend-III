@@ -26,8 +26,6 @@ app.get("/", (req, res) => {
     res.send("ShipNow API v1 - Corriendo");
 });
 
-
-
 // Los middlewares de error SIEMPRE van al final, después de todas las rutas:
 // primero notFoundHandler (rutas que no matchean ningún router),
 // y por último errorHandler (captura cualquier error lanzado en el camino).
@@ -43,6 +41,3 @@ const startServer = async () => {
 };
 
 startServer();
-
-
-//localhost:3000/health ?!! hacer
