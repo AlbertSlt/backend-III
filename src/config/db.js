@@ -1,13 +1,16 @@
 import mongoose from "mongoose";
 import { config } from "./env.config.js";
+import logger from "./logger.js";
+
 
 export async function connectDB() {
     try {
-        console.log("Conectando a la base de datos...");
+        logger.info("Conectando a la base de datos...");
         await mongoose.connect(config.MONGODB_URI);
-        console.log("Conexión a la base de datos establecida");
+        logger.info("Conexión a la base de datos establecida");
     } catch (error) {
-        console.warn("Error al conectar a la base de datos:", error);
+        // un error crítico que impide arrancar la app.
+        logger.fatal(`Error al conectar a la base de datos: ${error.message}`);
         process.exit(1);
     }
 }

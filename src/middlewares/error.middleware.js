@@ -1,5 +1,6 @@
 import { config } from "../config/env.config.js";
 import { AppError, ERROR_CODES } from "../errors/index.js";
+import logger from "../config/logger.js";
 
 export const notFoundHandler = (req, res, next) => {
     next(new AppError(ERROR_CODES.ROUTE_NOT_FOUND, `Ruta ${req.originalUrl} no encontrada`));
@@ -12,9 +13,9 @@ export function errorHandler(err, req, res, next) {
     const { statusCode, code, message } = customError;
 
     if (isCustomError) {
-        console.warn(`[ERROR CONTROLADO] ${code}: ${message}`);
+        logger.warning(`${code}: ${message} | ${req.method} ${req.originalUrl}`);
     } else {
-        console.error('[ERROR INESPERADO]', err);
+        logger.error(`[INESPERADO] ${err.message} | ${req.method} ${req.originalUrl}`);
     }
 
     const response = { status: 'error', error: code, message };

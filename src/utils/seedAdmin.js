@@ -1,6 +1,7 @@
 import UserService from "../services/user.service.js";
 import { USER_ROLES } from "./constants.js";
 import { config } from "../config/env.config.js";
+import logger from "../config/logger.js";
 
 export async function seedAdmin() {
 
@@ -9,7 +10,7 @@ export async function seedAdmin() {
     }
 
     if (!config.ADMIN_EMAIL || !config.ADMIN_PASSWORD) {
-        console.warn(
+        logger.warning(
             "SEED_ADMIN está activado, pero falta ADMIN_EMAIL o ADMIN_PASSWORD en el .env. Se omite el seed."
         );
         return;
@@ -25,11 +26,11 @@ export async function seedAdmin() {
                 password: config.ADMIN_PASSWORD,
                 role: USER_ROLES.ADMIN,
             });
-            console.log(`Usuario Admin creado: ${config.ADMIN_EMAIL}`);
+            logger.info(`Usuario Admin creado: ${config.ADMIN_EMAIL}`);
         } else {
-            console.log(`El usuario Admin (${config.ADMIN_EMAIL}) ya existe, no se crea de nuevo.`);
+            logger.info(`El usuario Admin (${config.ADMIN_EMAIL}) ya existe, no se crea de nuevo.`);
         }
     } catch (error) {
-        console.error("Error al crear el usuario admin:", error);
+        logger.error(`Error al crear el usuario admin: ${error.message}`);
     }
 }

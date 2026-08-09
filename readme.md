@@ -95,3 +95,39 @@ Las rutas y controllers ya no arman respuestas de error a mano: los `services` y
 - `GET http://localhost:3000/api/users/000000000000000000000000` → recurso inexistente → `404 USER_NOT_FOUND`
 - `GET http://localhost:3000/api/mocks/mocking-users?count=-5` → dato inválido → `400 INVALID_MOCK_AMOUNT`
 - `GET http://localhost:3000/api/no-existe` → ruta inexistente → `404 ROUTE_NOT_FOUND`
+
+## Módulo 4 - Logging y monitoreo básico
+
+Reemplaza el uso de `console.log()` por un logger centralizado con Winston, con distintos niveles de importancia y persistencia de errores en archivos.
+
+### Niveles de log
+
+De mayor a menor gravedad:
+
+- `fatal` - falla crítica que impide que la app siga funcionando (ej. no se pudo conectar a la base de datos al iniciar)
+- `error` - error inesperado del servidor
+- `warning` - error esperado o de negocio (recurso no encontrado, dato inválido, etc.)
+- `info` - eventos normales importantes (servidor iniciado, conexión a la base establecida, datos insertados)
+- `http` - peticiones HTTP
+- `debug` - información detallada para desarrollo
+
+### Comportamiento según el entorno
+
+El nivel mínimo de log depende de `NODE_ENV`:
+
+- **Desarrollo**: se muestran todos los niveles, incluido `debug`.
+- **Producción**: solo se muestran desde `info` en adelante (se ocultan `debug` y `http`).
+
+### Persistencia y rotación de archivos
+
+Los niveles `error` y `fatal` se guardan además en archivos dentro de la carpeta `logs/` (ignorada por Git). Los archivos rotan diariamente y se conservan los últimos 14 días.
+
+### Endpoint de prueba del logger
+
+Disponible solo fuera de producción (mismo criterio que `/api/mocks`):
+
+```bash
+GET http://localhost:3000/api/logger-test
+```
+
+Genera un log de cada nivel (`debug`, `http`, `info`, `warning`, `error`, `fatal`), tanto en consola como en el archivo de errores rotado (para `error` y `fatal`).

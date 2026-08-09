@@ -8,6 +8,7 @@ import {
 } from '../../utils/constants.js';
 import MockRepository from '../repositories/mock.repository.js';
 import { AppError, ERROR_CODES } from '../../errors/index.js';
+import logger from '../../config/logger.js';
 
 class MockService {
 
@@ -71,7 +72,8 @@ class MockService {
             };
         });
     };
-insertMockData = async ({ users = 5, couriers = 3, orders = 5, deliveries = 5 } = {}) => {
+
+    insertMockData = async ({ users = 5, couriers = 3, orders = 5, deliveries = 5 } = {}) => {
         try {
             const insertedUsers = await MockRepository.insertUsers(
                 this.generateMockUsers(users, USER_ROLES.USER)
@@ -92,12 +94,20 @@ insertMockData = async ({ users = 5, couriers = 3, orders = 5, deliveries = 5 } 
                 this.generateMockDeliveries(deliveries, orderIds, courierIds)
             );
 
-            return {
+            // ===== INICIO LOGGER: fix - se arma "result" ANTES de usarlo en el log =====
+            const result = {
                 users: insertedUsers.length,
                 couriers: insertedCouriers.length,
                 orders: insertedOrders.length,
                 deliveries: insertedDeliveries.length
             };
+
+            logger.info(
+                `Datos mock insertados: ${result.users} usuarios, ${result.couriers} repartidores, ${result.orders} pedidos, ${result.deliveries} entregas`
+            );
+
+            return result;
+            // ===== FIN LOGGER =====
         } catch (error) {
             throw new AppError(
                 ERROR_CODES.MOCK_GENERATION_ERROR,
@@ -118,7 +128,7 @@ insertMockData = async ({ users = 5, couriers = 3, orders = 5, deliveries = 5 } 
             );
         }
     };
-    
+
 }
 
 export default new MockService();
