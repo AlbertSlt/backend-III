@@ -1,0 +1,93 @@
+paths:
+  /api/products:
+    get:
+      tags:
+        - Products
+      summary: Obtener productos disponibles
+      description: >
+        Devuelve unicamente los productos con status "available". Los
+        productos "out_of_stock" no se incluyen en este listado.
+      responses:
+        '200':
+          $ref: '#/components/responses/ProductListResponse'
+    post:
+      tags:
+        - Products
+      summary: Crear un producto
+      description: >
+        Crea un nuevo producto. name, description, price, code y stock son
+        obligatorios (validados por el schema de Mongoose). code debe ser
+        unico.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductCreateRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/ProductCreatedResponse'
+        '400':
+          $ref: '#/components/responses/ValidationErrorResponse'
+        '409':
+          $ref: '#/components/responses/DuplicateKeyResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+
+  /api/products/{id}:
+    get:
+      tags:
+        - Products
+      summary: Obtener un producto por id
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/ProductDetailResponse'
+        '400':
+          $ref: '#/components/responses/InvalidIdResponse'
+        '404':
+          $ref: '#/components/responses/ProductNotFoundResponse'
+    put:
+      tags:
+        - Products
+      summary: Actualizar un producto
+      description: >
+        Todos los campos del body son opcionales. Nota: esta operacion no
+        corre las validaciones de Mongoose (no se envian campos requeridos
+        faltantes), por lo que el 400 solo ocurre si el id de la URL o algun
+        campo del body no tiene el formato/tipo esperado.
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/ProductUpdatedResponse'
+        '400':
+          $ref: '#/components/responses/InvalidIdResponse'
+        '404':
+          $ref: '#/components/responses/ProductNotFoundResponse'
+        '409':
+          $ref: '#/components/responses/DuplicateKeyResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'
+    delete:
+      tags:
+        - Products
+      summary: Eliminar un producto
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/ProductDeletedResponse'
+        '400':
+          $ref: '#/components/responses/InvalidIdResponse'
+        '404':
+          $ref: '#/components/responses/ProductNotFoundResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'

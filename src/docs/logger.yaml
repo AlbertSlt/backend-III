@@ -1,0 +1,16 @@
+paths:
+  /api/logger-test:
+    get:
+      tags:
+        - Logger
+      summary: Validar el funcionamiento del logger
+      description: >
+        No es una funcionalidad de negocio: es una herramienta interna para
+        verificar que Winston esta configurado correctamente. Genera un log
+        de cada nivel (debug, http, info, warning, error, fatal) por
+        consola, y persiste error/fatal en el archivo rotado
+        correspondiente. Solo disponible cuando NODE_ENV distinto de
+        "production" (fuera de ese entorno la ruta ni siquiera se registra).
+      responses:
+        '200':
+          $ref: '#/components/responses/LoggerTestResponse'

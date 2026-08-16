@@ -1,0 +1,67 @@
+paths:
+  /api/deliveries:
+    get:
+      tags:
+        - Deliveries
+      summary: Obtener todas las entregas
+      description: >
+        Devuelve la lista de entregas. El query string se pasa directo como
+        filtro de Mongo, por eso se puede filtrar por status (y en general
+        por cualquier campo del modelo Delivery).
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [assigned, in_transit, completed, failed]
+          description: Filtra las entregas por estado. Opcional.
+      responses:
+        '200':
+          $ref: '#/components/responses/DeliveryListResponse'
+
+  /api/deliveries/{id}:
+    get:
+      tags:
+        - Deliveries
+      summary: Obtener una entrega por id
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/DeliveryDetailResponse'
+        '400':
+          $ref: '#/components/responses/InvalidIdResponse'
+        '404':
+          $ref: '#/components/responses/DeliveryNotFoundResponse'
+
+  /api/deliveries/{id}/status:
+    patch:
+      tags:
+        - Deliveries
+      summary: Actualizar el estado de una entrega
+      description: >
+        Valida el estado enviado contra los estados permitidos antes de
+        consultar la base de datos.
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryStatusUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/DeliveryStatusUpdatedResponse'
+        '400':
+          description: >
+            Ocurre por dos motivos posibles: el estado enviado no es uno de
+            los estados validos (INVALID_DELIVERY_STATUS), o el id de la URL
+            no tiene formato valido de ObjectId (INVALID_ID).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/DeliveryNotFoundResponse'

@@ -131,3 +131,59 @@ GET http://localhost:3000/api/logger-test
 ```
 
 Genera un log de cada nivel (`debug`, `http`, `info`, `warning`, `error`, `fatal`), tanto en consola como en el archivo de errores rotado (para `error` y `fatal`).
+
+## Módulo 5 - Documentación de API con Swagger
+
+La API expone documentación interactiva (OpenAPI 3.0), generada con `swagger-jsdoc` + `swagger-ui-express`.
+
+### Cómo acceder
+
+Con el servidor corriendo:
+
+```
+http://localhost:3000/api/docs
+```
+
+Desde ahí se puede ver cada endpoint, su body esperado, sus respuestas posibles, y probarlo directo con el botón "Try it out" (no hace falta Postman para esto, aunque también se puede seguir usando).
+
+### Qué se agregó en este módulo
+
+Además de documentar lo que ya existía, se sumaron endpoints de solo lectura + actualización de estado para **Orders** y **Deliveries**, que hasta ahora solo existían como modelos y como datos de mocks, pero nunca habían tenido rutas propias:
+
+- `GET /api/orders` (admite filtro por `?status=`)
+- `GET /api/orders/:id`
+- `PATCH /api/orders/:id/status` — body `{ "status": "..." }`, valida contra los estados de `ORDER_STATUS`
+- `GET /api/deliveries` (admite filtro por `?status=`)
+- `GET /api/deliveries/:id`
+- `PATCH /api/deliveries/:id/status` — body `{ "status": "..." }`, valida contra los estados de `DELIVERY_STATUS`
+
+No se agregó `create` ni `delete` para estas dos entidades: la única forma de generarlas hoy sigue siendo vía `/api/mocks`.
+
+### Módulos documentados
+
+La documentación está organizada en 6 tags:
+
+| Tag | Contenido |
+|---|---|
+| **Users** | CRUD completo |
+| **Products** | CRUD completo (el listado filtra solo `status: available`) |
+| **Orders** | Lectura + actualización de estado |
+| **Deliveries** | Lectura + actualización de estado |
+| **Mocks** | Los 6 endpoints de datos de prueba (ver Módulo 2) |
+| **Logger** | El endpoint de prueba del logger (ver Módulo 4), aclarado ahí mismo como herramienta interna, no como funcionalidad de negocio |
+
+Todos los errores usan la misma estructura documentada en el Módulo 3 (`ErrorResponse`), y los códigos que aparecen en Swagger (`VALIDATION_ERROR`, `USER_NOT_FOUND`, `PRODUCT_NOT_FOUND`, `ORDER_NOT_FOUND`, `DELIVERY_NOT_FOUND`, `INVALID_ID`, `DUPLICATE_KEY`, `INVALID_MOCK_AMOUNT`, `INVALID_ORDER_STATUS`, `INVALID_DELIVERY_STATUS`) son los mismos definidos en `src/errors/error-codes.js`.
+
+### Aclaración para probar Orders/Deliveries desde Swagger
+
+Como estas dos entidades no tienen un endpoint de creación propio, para probar `GET /api/orders/:id` o `PATCH /api/orders/:id/status` primero hay que generar datos reales:
+
+1. `POST /api/mocks/generate-data` con body `{}` (usa los valores por defecto) o con las cantidades que prefieras.
+2. `GET /api/orders` (o `/api/deliveries`) y copiar un `_id` real de la respuesta.
+3. Usar ese `_id` en los demás endpoints.
+
+Los endpoints `mocking-orders` y `mocking-deliveries` **no** sirven para este paso: devuelven datos que nunca se guardan en la base, con ids inventados por Faker.
+
+### Config separada de las rutas
+
+Toda la configuración de Swagger (info general, schemas, responses y parameters reutilizables) vive en `src/config/swagger.config.js`. Los archivos en `src/docs/*.yaml` (uno por tag: `users`, `products`, `orders`, `deliveries`, `mocks`, `logger`) contienen solo los `paths`, referenciando esa configuración con `$ref` — no hay definiciones repetidas entre archivos.

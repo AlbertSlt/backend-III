@@ -1,0 +1,123 @@
+paths:
+  /api/mocks/mocking-users:
+    get:
+      tags:
+        - Mocks
+      summary: Generar usuarios simulados (sin guardar)
+      description: >
+        Genera usuarios de prueba en memoria, sin insertarlos en MongoDB.
+        Util para ver rapidamente la forma de los datos.
+      parameters:
+        - $ref: '#/components/parameters/CountQueryParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/MockUsersResponse'
+        '400':
+          $ref: '#/components/responses/InvalidMockAmountResponse'
+
+  /api/mocks/mocking-couriers:
+    get:
+      tags:
+        - Mocks
+      summary: Generar repartidores simulados (sin guardar)
+      description: >
+        Igual que mocking-users, pero con role "courier". No se insertan en
+        MongoDB.
+      parameters:
+        - $ref: '#/components/parameters/CountQueryParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/MockCouriersResponse'
+        '400':
+          $ref: '#/components/responses/InvalidMockAmountResponse'
+
+  /api/mocks/mocking-orders:
+    get:
+      tags:
+        - Mocks
+      summary: Generar pedidos simulados (sin guardar)
+      description: >
+        Genera pedidos de prueba en memoria, sin insertarlos en MongoDB. Los
+        campos user e items.product son ObjectIds generados al azar por
+        Faker, no corresponden a usuarios ni productos reales.
+      parameters:
+        - $ref: '#/components/parameters/CountQueryParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/MockOrdersResponse'
+        '400':
+          $ref: '#/components/responses/InvalidMockAmountResponse'
+
+  /api/mocks/mocking-deliveries:
+    get:
+      tags:
+        - Mocks
+      summary: Generar entregas simuladas (sin guardar)
+      description: >
+        Genera entregas de prueba en memoria, sin insertarlas en MongoDB. Los
+        campos order y courier son ObjectIds generados al azar por Faker (o
+        null en courier), no corresponden a pedidos ni repartidores reales.
+      parameters:
+        - $ref: '#/components/parameters/CountQueryParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/MockDeliveriesResponse'
+        '400':
+          $ref: '#/components/responses/InvalidMockAmountResponse'
+
+  /api/mocks/generate-products:
+    post:
+      tags:
+        - Mocks
+      summary: Generar productos de prueba (y opcionalmente guardarlos)
+      description: >
+        count es obligatorio (1-1000). Si saveToDatabase es true, los
+        productos generados se insertan en MongoDB y la respuesta es 201; si
+        es false u omitido, solo se generan en memoria y la respuesta es 200.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateProductsRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/ProductsGeneratedResponse'
+        '201':
+          $ref: '#/components/responses/ProductsSavedResponse'
+        '400':
+          description: >
+            Ocurre por dos motivos posibles: count esta ausente o fuera de
+            rango (INVALID_MOCK_AMOUNT), o saveToDatabase no es un booleano
+            (VALIDATION_ERROR).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          $ref: '#/components/responses/MockGenerationErrorResponse'
+
+  /api/mocks/generate-data:
+    post:
+      tags:
+        - Mocks
+      summary: Generar e insertar datos de prueba relacionados
+      description: >
+        Crea usuarios y repartidores, y luego usa sus ids reales para
+        generar pedidos y entregas relacionados entre si. Todo se inserta en
+        MongoDB. Todos los campos del body son opcionales (defaults:
+        users=5, couriers=3, orders=5, deliveries=5). La respuesta trae solo
+        el conteo de documentos insertados, no los documentos completos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GenerateDataRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/MockDataInsertedResponse'
+        '400':
+          $ref: '#/components/responses/InvalidMockAmountResponse'
+        '500':
+          $ref: '#/components/responses/MockGenerationErrorResponse'

@@ -1,0 +1,67 @@
+paths:
+  /api/orders:
+    get:
+      tags:
+        - Orders
+      summary: Obtener todos los pedidos
+      description: >
+        Devuelve la lista de pedidos. El query string se pasa directo como
+        filtro de Mongo, por eso se puede filtrar por status (y en general
+        por cualquier campo del modelo Order).
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pending, in_progress, delivered, cancelled]
+          description: Filtra los pedidos por estado. Opcional.
+      responses:
+        '200':
+          $ref: '#/components/responses/OrderListResponse'
+
+  /api/orders/{id}:
+    get:
+      tags:
+        - Orders
+      summary: Obtener un pedido por id
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          $ref: '#/components/responses/OrderDetailResponse'
+        '400':
+          $ref: '#/components/responses/InvalidIdResponse'
+        '404':
+          $ref: '#/components/responses/OrderNotFoundResponse'
+
+  /api/orders/{id}/status:
+    patch:
+      tags:
+        - Orders
+      summary: Actualizar el estado de un pedido
+      description: >
+        Valida el estado enviado contra los estados permitidos antes de
+        consultar la base de datos.
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderStatusUpdateRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/OrderStatusUpdatedResponse'
+        '400':
+          description: >
+            Ocurre por dos motivos posibles: el estado enviado no es uno de
+            los estados validos (INVALID_ORDER_STATUS), o el id de la URL no
+            tiene formato valido de ObjectId (INVALID_ID).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/OrderNotFoundResponse'
