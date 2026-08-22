@@ -7,15 +7,14 @@ export const notFoundHandler = (req, res, next) => {
 };
 
 export function errorHandler(err, req, res, next) {
-    const isCustomError = err instanceof AppError;
-    const customError = isCustomError ? err : mapToCustomError(err);
+    const customError = err instanceof AppError ? err : mapToCustomError(err);
 
     const { statusCode, code, message } = customError;
 
-    if (isCustomError) {
-        logger.warning(`${code}: ${message} | ${req.method} ${req.originalUrl}`);
-    } else {
+    if (customError.code === ERROR_CODES.INTERNAL_SERVER_ERROR) {
         logger.error(`[INESPERADO] ${err.message} | ${req.method} ${req.originalUrl}`);
+    } else {
+        logger.warning(`${code}: ${message} | ${req.method} ${req.originalUrl}`);
     }
 
     const response = { status: 'error', error: code, message };

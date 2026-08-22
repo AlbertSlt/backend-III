@@ -2,6 +2,7 @@ import ProductRepository from '../repositories/product.repository.js';
 import { PRODUCT_STATUS } from '../utils/constants.js';
 import { AppError, ERROR_CODES } from '../errors/index.js';
 
+
 class ProductService {
     async getAllProducts() {
         const filter = { status: PRODUCT_STATUS.AVAILABLE };

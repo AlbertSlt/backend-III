@@ -1,4 +1,4 @@
-# ShipNow API
+# Ship-POW API
 
 API para gestión de productos y usuarios - Backend III
 
@@ -187,3 +187,69 @@ Los endpoints `mocking-orders` y `mocking-deliveries` **no** sirven para este pa
 ### Config separada de las rutas
 
 Toda la configuración de Swagger (info general, schemas, responses y parameters reutilizables) vive en `src/config/swagger.config.js`. Los archivos en `src/docs/*.yaml` (uno por tag: `users`, `products`, `orders`, `deliveries`, `mocks`, `logger`) contienen solo los `paths`, referenciando esa configuración con `$ref` — no hay definiciones repetidas entre archivos.
+
+## Módulo 6 - Testing funcional con Mocha, Chai y Supertest
+
+Suite de tests automatizados que valida el comportamiento real de la API: endpoints principales, casos exitosos y errores esperados.
+
+### Herramientas
+
+- **Mocha**: organiza y ejecuta los tests (`describe` / `it`).
+- **Chai**: aserciones (`expect`).
+- **Supertest**: hace peticiones HTTP reales contra la app de Express, sin necesidad de levantar el servidor en un puerto.
+
+### Separación de entorno
+
+Los tests corren contra una base de datos y una configuración completamente separadas del entorno de desarrollo:
+
+- `src/app.js` exporta la app de Express sola, sin conectar a la base ni levantar el servidor (eso lo hace `src/server.js`).
+- `src/config/env.config.js` carga `.env.test` en vez de `.env` cuando `NODE_ENV=test`.
+- `test/setup.js` conecta a la base de test antes de correr toda la suite, y cierra la conexión al final (usando root hooks de Mocha).
+
+### Variables de entorno necesarias
+
+Copiar `.env.test.example` a `.env.test` y completar:
+
+PORT=3001
+MONGODB_URI=mongodb://localhost:27017/shipnow-test
+NODE_ENV=test
+SEED_ADMIN=false
+ADMIN_EMAIL=admin@ship-POW.com
+ADMIN_PASSWORD=pass123
+
+
+**Importante:** usar una base de datos distinta a la de desarrollo (ej. `shipnow-test` en vez de `shipnow`). Los tests insertan y borran datos reales; nunca deben correr contra la base de desarrollo o producción.
+
+### Cómo ejecutar los tests
+
+```bash
+npm test
+```
+
+Esto corre `cross-env NODE_ENV=test mocha`, que fuerza el entorno de testing antes de invocar Mocha (funciona igual en Windows, Mac y Linux).
+
+### Módulos cubiertos
+
+| Archivo | Cubre |
+|---|---|
+| `test/routes/users.routes.test.js` | CRUD completo de usuarios: listado, creación (éxito/validación/duplicado), lectura por id (éxito/404/400 id inválido), actualización, eliminación |
+| `test/routes/orders.routes.test.js` | Listado, lectura por id (éxito/404/400), creación real de pedidos vía `/api/mocks/generate-data`, actualización de estado (éxito/estado inválido/404) |
+| `test/routes/mocks.routes.test.js` | `mocking-users` (éxito, valor por defecto, cantidad inválida, cantidad excesiva), `generate-data` (inserción real, valores por defecto, cantidades inválidas) |
+| `test/routes/logger.routes.test.js` | Endpoint de prueba del logger |
+| `test/routes/swagger.routes.test.js` | Disponibilidad de la documentación en `/api/docs` |
+| `test/routes/notFound.routes.test.js` | Rutas inexistentes → 404 `ROUTE_NOT_FOUND` |
+| `test/services/product.service.test.js` | CRUD de `ProductService` a nivel de servicio (sin pasar por HTTP) |
+
+### Nota sobre la creación de pedidos
+
+No existe un endpoint `POST /api/orders` (ver Módulo 5): la única forma de generar pedidos reales en la base es a través de `/api/mocks/generate-data`. El test de "creación de pedido con datos válidos" ejercita ese flujo real, en vez de un endpoint que no existe en el proyecto.
+
+### Limpieza de datos
+
+Cada suite es responsable de limpiar los datos que genera:
+
+- `users.routes.test.js` y `orders.routes.test.js` crean usuarios con emails bajo el dominio `@shipPOW-test.com` y los borran en un `after()` al final de la suite.
+- `mocks.routes.test.js` limpia las colecciones de usuarios, pedidos y entregas al final de su bloque de `generate-data` (ese endpoint no devuelve los ids de lo insertado, por lo que la limpieza es total en vez de selectiva — aceptable porque corre contra una base de test dedicada).
+- `product.service.test.js` crea y elimina sus propios productos, con una red de seguridad en `after()` por si algún test falla antes de llegar al `delete`.
+
+Ningún test depende de datos cargados manualmente ni del orden de ejecución de otros archivos.

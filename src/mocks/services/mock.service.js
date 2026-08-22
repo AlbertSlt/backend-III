@@ -15,6 +15,7 @@ class MockService {
     generateMockUsers = (count, role = USER_ROLES.USER) => {
         const users = Array.from({ length: count }, () => {
             return {
+                _id: faker.database.mongodbObjectId(),
                 first_name: faker.person.firstName(),
                 last_name: faker.person.lastName(),
                 email: faker.internet.email().toLowerCase(),
@@ -29,6 +30,7 @@ class MockService {
     generateMockProducts = (count) => {
         const products = Array.from({ length: count }, () => {
             return {
+                _id: faker.database.mongodbObjectId(),
                 name: faker.commerce.productName(),
                 description: faker.commerce.productDescription(),
                 price: parseFloat(faker.commerce.price()),
@@ -94,7 +96,6 @@ class MockService {
                 this.generateMockDeliveries(deliveries, orderIds, courierIds)
             );
 
-            // ===== INICIO LOGGER: fix - se arma "result" ANTES de usarlo en el log =====
             const result = {
                 users: insertedUsers.length,
                 couriers: insertedCouriers.length,
@@ -107,7 +108,6 @@ class MockService {
             );
 
             return result;
-            // ===== FIN LOGGER =====
         } catch (error) {
             throw new AppError(
                 ERROR_CODES.MOCK_GENERATION_ERROR,

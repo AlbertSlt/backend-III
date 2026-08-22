@@ -12,7 +12,8 @@ class UserRepository {
     }
 
     async create(userData) {
-        return await UserModel.create(userData);
+        const created = await UserModel.create(userData);
+        return await UserModel.findById(created._id).select(DEFAULT_PROJECTION);
     }
 
     async update(id, updateData) {

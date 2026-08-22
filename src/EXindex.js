@@ -16,7 +16,7 @@ import deliveryRoutes from "./routes/deliveries.routes.js";
 
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
 
-const app = express();
+export const app = express();
 
 app.use(express.json());
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
