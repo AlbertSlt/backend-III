@@ -18,6 +18,14 @@ class OrderRepository {
             { new: true, runValidators: true }
         ).select(DEFAULT_PROJECTION);
     }
+
+    async setProof(id, proofData) {
+        return await Order.findByIdAndUpdate(
+            id,
+            { proof: proofData },
+            { new: true, runValidators: true }
+        ).select(DEFAULT_PROJECTION);
+    }
 }
 
 export default new OrderRepository();

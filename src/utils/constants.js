@@ -28,3 +28,14 @@ export const DELIVERY_STATUS = Object.freeze({
     COMPLETED: 'completed',
     FAILED: 'failed'
 });
+
+export const DOCUMENT_TYPES = Object.freeze({
+    USER_DOCUMENT: 'user_document',
+    DRIVER_LICENSE: 'driver_license',
+    DELIVERY_PROOF: 'delivery_proof'
+});
+
+export const USER_DOCUMENT_TYPES = Object.freeze([
+    DOCUMENT_TYPES.USER_DOCUMENT,
+    DOCUMENT_TYPES.DRIVER_LICENSE
+]);

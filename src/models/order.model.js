@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { ORDER_STATUS, ORDER_PRIORITY } from '../utils/constants.js';
+import documentSchema from './schemas/document.schema.js';
 
 const orderSchema = new mongoose.Schema({
     user: {
@@ -32,6 +33,10 @@ const orderSchema = new mongoose.Schema({
         type: String,
         enum: Object.values(ORDER_PRIORITY),
         default: ORDER_PRIORITY.MEDIUM
+    },
+    proof: {
+        type: documentSchema,
+        default: null
     }
 }, {
     timestamps: true

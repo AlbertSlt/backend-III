@@ -56,12 +56,43 @@ paths:
           $ref: '#/components/responses/OrderStatusUpdatedResponse'
         '400':
           description: >
-            Ocurre por dos motivos posibles: el estado enviado no es uno de
-            los estados validos (INVALID_ORDER_STATUS), o el id de la URL no
+            Ocurre por dos motivos posibles: el estado enviado no es uno de los estados validos (INVALID_ORDER_STATUS), o el id de la URL no
             tiene formato valido de ObjectId (INVALID_ID).
+        '404':
+          $ref: '#/components/responses/OrderNotFoundResponse'
+
+  /api/orders/{id}/proof:
+    post:
+      tags:
+        - Orders
+      summary: Cargar el comprobante de entrega de un pedido
+      description: >
+        Sube un archivo (multipart/form-data) y lo asocia como comprobante
+        del pedido. Solo se guardan los metadatos en la base de datos (nombre,
+        ruta, tipo, tamaño); el archivo en si queda en el servidor. Si el
+        pedido ya tenia un comprobante cargado, este endpoint lo reemplaza.
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProofUploadRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/OrderProofUploadedResponse'
+        '400':
+          description: >
+            Ocurre por varios motivos posibles: no se envio ningun archivo
+            (FILE_REQUIRED), el tipo de archivo no esta permitido
+            (INVALID_FILE_TYPE), el archivo supera los 5MB (FILE_TOO_LARGE),
+            o el id de la URL no tiene formato valido (INVALID_ID).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
           $ref: '#/components/responses/OrderNotFoundResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'

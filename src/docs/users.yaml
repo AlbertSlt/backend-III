@@ -103,3 +103,44 @@ paths:
           $ref: '#/components/responses/UserNotFoundResponse'
         '500':
           $ref: '#/components/responses/InternalServerErrorResponse'
+
+  /api/users/{id}/documents:
+    post:
+      tags:
+        - Users
+      summary: Cargar un documento de un usuario
+      description: >
+        Sube un archivo (multipart/form-data) y lo asocia al usuario. Solo se
+        guardan los metadatos en la base de datos (nombre, ruta, tipo,
+        tamaño); el archivo en si queda en el servidor. El documento se
+        agrega a la lista de documentos del usuario (no reemplaza los
+        anteriores). IMPORTANTE: el campo "type" debe enviarse antes que
+        "document" en el formulario, para que el servidor elija bien la
+        carpeta de destino.
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserDocumentUploadRequest'
+      responses:
+        '200':
+          $ref: '#/components/responses/UserDocumentUploadedResponse'
+        '400':
+          description: >
+            Ocurre por varios motivos posibles: no se envio ningun archivo
+            (FILE_REQUIRED), el tipo de archivo no esta permitido
+            (INVALID_FILE_TYPE), el archivo supera los 5MB (FILE_TOO_LARGE),
+            el campo type no fue enviado o no es valido
+            (INVALID_DOCUMENT_TYPE), o el id de la URL no tiene formato
+            valido (INVALID_ID).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/UserNotFoundResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerErrorResponse'

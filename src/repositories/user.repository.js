@@ -26,6 +26,14 @@ class UserRepository {
     async delete(id) {
         return await UserModel.findByIdAndDelete(id);
     }
+
+    async addDocument(id, documentData) {
+        return await UserModel.findByIdAndUpdate(
+            id,
+            { $push: { documents: documentData } },
+            { new: true, runValidators: true }
+        ).select(DEFAULT_PROJECTION);
+    }
 }
 
 export default new UserRepository();

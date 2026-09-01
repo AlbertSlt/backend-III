@@ -38,5 +38,11 @@ function mapToCustomError(err) {
         const details = Object.values(err.errors).map((e) => e.message);
         return new AppError(ERROR_CODES.VALIDATION_ERROR, err.message, details);
     }
+    if (err.name === 'MulterError') {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return new AppError(ERROR_CODES.FILE_TOO_LARGE);
+        }
+        return new AppError(ERROR_CODES.UPLOAD_ERROR, `Error al procesar el archivo: ${err.message}`);
+    }
     return new AppError(ERROR_CODES.INTERNAL_SERVER_ERROR);
 }

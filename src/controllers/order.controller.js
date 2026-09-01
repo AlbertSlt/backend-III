@@ -30,6 +30,16 @@ class OrderController {
             next(error);
         }
     }
+
+    static async uploadProof(req, res, next) {
+        try {
+            const { id } = req.params;
+            const order = await OrderService.addProof(id, req.file);
+            res.status(200).json({ status: "success", payload: order });
+        } catch (error) {
+            next(error);
+        }
+    }
 }
 
 export default OrderController;

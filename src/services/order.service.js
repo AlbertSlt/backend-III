@@ -1,6 +1,7 @@
 import OrderRepository from '../repositories/order.repository.js';
-import { ORDER_STATUS } from '../utils/constants.js';
+import { ORDER_STATUS, DOCUMENT_TYPES } from '../utils/constants.js';
 import { AppError, ERROR_CODES } from '../errors/index.js';
+import logger from '../config/logger.js';
 
 class OrderService {
     async getAllOrders(query) {
@@ -28,6 +29,32 @@ class OrderService {
             throw new AppError(ERROR_CODES.ORDER_NOT_FOUND);
         }
         return order;
+    }
+
+    async addProof(id, file) {
+        if (!file) {
+            throw new AppError(ERROR_CODES.FILE_REQUIRED);
+        }
+
+        const existingOrder = await OrderRepository.getById(id);
+        if (!existingOrder) {
+            throw new AppError(ERROR_CODES.ORDER_NOT_FOUND);
+        }
+
+        const proofData = {
+            originalName: file.originalname,
+            fileName: file.filename,
+            path: file.path,
+            mimeType: file.mimetype,
+            size: file.size,
+            type: DOCUMENT_TYPES.DELIVERY_PROOF
+        };
+
+        const updatedOrder = await OrderRepository.setProof(id, proofData);
+
+        logger.info(`Comprobante cargado para el pedido ${id}: ${file.originalname}`);
+
+        return updatedOrder;
     }
 }
 

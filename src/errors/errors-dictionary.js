@@ -50,8 +50,28 @@ export const errorsDictionary = {
         message: 'La ruta solicitada no existe'
     },
     [ERROR_CODES.DUPLICATE_KEY]: {
-    statusCode: 409,
-    message: 'Ya existe un registro con ese valor'
+        statusCode: 409,
+        message: 'Ya existe un registro con ese valor'
+    },
+    [ERROR_CODES.FILE_REQUIRED]: {
+        statusCode: 400,
+        message: 'Debe adjuntar un archivo'
+    },
+    [ERROR_CODES.INVALID_FILE_TYPE]: {
+        statusCode: 400,
+        message: 'El tipo de archivo no esta permitido'
+    },
+    [ERROR_CODES.FILE_TOO_LARGE]: {
+        statusCode: 400,
+        message: 'El archivo supera el tamaño maximo permitido (5MB)'
+    },
+    [ERROR_CODES.INVALID_DOCUMENT_TYPE]: {
+        statusCode: 400,
+        message: 'El tipo de documento indicado no es valido'
+    },
+    [ERROR_CODES.UPLOAD_ERROR]: {
+        statusCode: 500,
+        message: 'Error al procesar la carga del archivo'
     },
     [ERROR_CODES.INTERNAL_SERVER_ERROR]: {
         statusCode: 500,

@@ -222,6 +222,9 @@ ADMIN_PASSWORD=pass123
 
 ### Cómo ejecutar los tests
 
+**Prerequisito:** tener una instancia de MongoDB corriendo (local o remota) y accesible en la URI configurada en `.env.test`. Los tests se conectan a la base real antes de arrancar (ver `test/setup.js`); si MongoDB no está disponible, la suite no puede correr.
+
+
 ```bash
 npm test
 ```
@@ -253,3 +256,98 @@ Cada suite es responsable de limpiar los datos que genera:
 - `product.service.test.js` crea y elimina sus propios productos, con una red de seguridad en `after()` por si algún test falla antes de llegar al `delete`.
 
 Ningún test depende de datos cargados manualmente ni del orden de ejecución de otros archivos.
+
+## Módulo 7 - Archivos, documentos y comprobantes con Multer
+
+Carga de archivos (`multipart/form-data`) integrada al resto del proyecto: validaciones conectadas al manejo centralizado de errores, metadatos persistidos en MongoDB (nunca el archivo en sí), logging, documentación en Swagger y tests funcionales.
+
+### Configuración de Multer
+
+Centralizada en `src/middlewares/upload.middleware.js`, separada de las rutas:
+
+- **Tipos permitidos**: `application/pdf`, `image/jpeg`, `image/png`, `image/webp`.
+- **Tamaño máximo**: 5MB por archivo.
+- **Nombre de archivo**: generado (`timestamp-random.ext`), nunca se reutiliza el nombre original para evitar colisiones.
+- **Carpeta de destino**: depende del campo del archivo y, para documentos de usuario, del `type` enviado:
+  - campo `proof` → `uploads/proofs`
+  - campo `document` con `type=driver_license` → `uploads/licenses`
+  - campo `document` con cualquier otro `type` (o `user_document`) → `uploads/documents`
+
+**Importante:** para que la carpeta se elija correctamente, el campo `type` debe enviarse **antes** que el archivo en el formulario multipart (Multer necesita tener `type` ya parseado cuando decide dónde guardar el archivo). En Postman/Swagger esto significa agregar primero el campo de texto `type` y después el campo de archivo `document`. Si se envía al revés, el documento igual se guarda correctamente (no es un error), solo cae por defecto en `uploads/documents` en vez de `uploads/licenses`.
+
+### Estructura de carpetas
+
+```
+uploads/
+├── documents/   (documentos de usuario)
+├── licenses/    (licencias de repartidor)
+└── proofs/      (comprobantes de entrega)
+```
+
+Cada carpeta tiene un `.gitkeep` para que Git la trackee. Los archivos subidos por los usuarios **no** se suben al repositorio (ver `.gitignore`): solo queda versionada la estructura de carpetas, nunca su contenido.
+
+### Qué se guarda en la base de datos
+
+Solo los **metadatos** del archivo, nunca el binario. El schema reutilizable `src/models/schemas/document.schema.js` define:
+
+| Campo | Descripción |
+|---|---|
+| `originalName` | Nombre original del archivo enviado por el cliente |
+| `fileName` | Nombre generado por el servidor (el que existe en disco) |
+| `path` | Ruta relativa donde quedó guardado |
+| `mimeType` | Tipo MIME detectado |
+| `size` | Tamaño en bytes |
+| `type` | `user_document`, `driver_license` o `delivery_proof` |
+| `uploadedAt` | Fecha de carga |
+
+Este schema se embebe en dos lugares:
+- `User.documents`: array (un usuario puede tener varios documentos).
+- `Order.proof`: objeto único, `null` hasta que se cargue un comprobante (una carga nueva reemplaza a la anterior).
+
+### Endpoints
+
+| Método | Ruta | Campo de archivo | Body adicional |
+|---|---|---|---|
+| POST | `/api/users/:id/documents` | `document` | `type` (`user_document` o `driver_license`) |
+| POST | `/api/orders/:id/proof` | `proof` | — |
+
+### Errores nuevos
+
+Conectados al middleware global de errores, con el mismo formato del resto de la API:
+
+| Código | Status | Cuándo ocurre |
+|---|---|---|
+| `FILE_REQUIRED` | 400 | No se adjuntó ningún archivo |
+| `INVALID_FILE_TYPE` | 400 | El archivo no es PDF/JPEG/PNG/WEBP |
+| `FILE_TOO_LARGE` | 400 | El archivo supera los 5MB |
+| `INVALID_DOCUMENT_TYPE` | 400 | El campo `type` falta o no es válido (solo en `/users/:id/documents`) |
+| `UPLOAD_ERROR` | 500 | Cualquier otro error de Multer no contemplado arriba |
+
+Los errores propios de Multer (`MulterError`, ej. límite de tamaño excedido) se traducen automáticamente al formato estándar en `error.middleware.js`, igual que los `CastError` o `ValidationError` de Mongoose.
+
+### Logging
+
+El servicio registra la carga exitosa de cada archivo (`logger.info`), y las advertencias (tipo inválido, archivo faltante) quedan registradas por el propio middleware de errores como `warning`, igual que el resto de los errores esperados del proyecto.
+
+### Documentación en Swagger
+
+Ambos endpoints están documentados como `multipart/form-data` en `/api/docs`, bajo los tags `Users` y `Orders` respectivamente (no se creó un tag separado de "Uploads", ya que conceptualmente son una acción más sobre esas entidades). Incluyen:
+
+- Schema `DocumentMetadata` (la forma de un documento/comprobante ya guardado).
+- Schemas de request (`UserDocumentUploadRequest`, `ProofUploadRequest`) con el campo de archivo en formato `binary`.
+- Todas las respuestas de error posibles documentadas junto a su código.
+
+### Tests
+
+`test/routes/uploads.routes.test.js` cubre:
+
+- Carga exitosa de un documento de usuario y de un comprobante de pedido (verificando status, estructura del payload y metadatos guardados).
+- Archivo faltante (`FILE_REQUIRED`) en ambos endpoints.
+- Tipo de archivo no permitido (`INVALID_FILE_TYPE`) en ambos endpoints.
+- Tipo de documento inválido (`INVALID_DOCUMENT_TYPE`), solo aplica a usuarios.
+- Entidad inexistente (`USER_NOT_FOUND` / `ORDER_NOT_FOUND`).
+- Id con formato inválido (`INVALID_ID`).
+
+Los archivos de prueba usados en los tests (`test/fixtures/document.pdf`, `test/fixtures/invalid.txt`) se adjuntan como `Buffer` en memoria (no como ruta de archivo), para evitar un problema conocido de `superagent` en Windows donde adjuntar un archivo leído desde disco puede abortar la petición espuriamente.
+
+**Nota:** Multer guarda el archivo en disco tan pronto pasa su `fileFilter` (validación de tipo/tamaño), **antes** de que corran las validaciones posteriores (tipo de documento inválido, id con formato inválido, entidad inexistente). Cualquiera de esos casos puede terminar en un error 400/404 dejando el archivo ya guardado en disco pero sin asociar a nada. Es una limitación conocida (fuera del alcance de esta pre-entrega); para no ensuciar `uploads/`, los tests leen el listado de archivos de `uploads/documents` y `uploads/proofs` antes de correr la suite y lo vuelven a leer al final, y borran los archivos que aparecen en la segunda lectura pero no en la primera (es decir, cualquier archivo generado durante la corrida, sin importar qué test específico lo haya creado).

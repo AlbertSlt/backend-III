@@ -6,6 +6,7 @@ import {
     ORDER_STATUS,
     ORDER_PRIORITY,
     DELIVERY_STATUS,
+    DOCUMENT_TYPES,
 } from '../utils/constants.js';
 import { ERROR_CODES } from '../errors/error-codes.js';
 
@@ -108,15 +109,35 @@ const schemas = {
     },
 
     // ---------- Users ----------
+    // ---------- Uploads (Multer) ----------
+    DocumentMetadata: {
+        type: 'object',
+        description: 'Metadatos de un archivo cargado. El archivo en si se guarda en el servidor; aca solo viaja la referencia.',
+        properties: {
+            originalName: { type: 'string', example: 'dni-frente.pdf' },
+            fileName: { type: 'string', example: '1717601111111-987654321.pdf' },
+            path: { type: 'string', example: 'uploads/documents/1717601111111-987654321.pdf' },
+            mimeType: { type: 'string', example: 'application/pdf' },
+            size: { type: 'integer', example: 24533 },
+            type: {
+                type: 'string',
+                enum: Object.values(DOCUMENT_TYPES),
+                example: DOCUMENT_TYPES.USER_DOCUMENT,
+            },
+            uploadedAt: { type: 'string', format: 'date-time' },
+        },
+    },
+
     User: {
         type: 'object',
         description: 'El campo password nunca se incluye en las respuestas (select: false en el modelo).',
         properties: {
-            _id: { type: 'string', example: '64a1f2e5c3b4d5e6f7g8h9i0' },
+            _id: { type: 'string', example: '64a1f2e5c3b4d5e6f7a8b9c0' },
             first_name: { type: 'string', example: 'Laura' },
             last_name: { type: 'string', example: 'Gomez' },
             email: { type: 'string', format: 'email', example: 'laura.gomez@example.com' },
             role: { type: 'string', enum: Object.values(USER_ROLES), example: USER_ROLES.USER },
+            documents: { type: 'array', items: { $ref: '#/components/schemas/DocumentMetadata' } },
         },
     },
     UserCreateRequest: {
@@ -145,12 +166,30 @@ const schemas = {
             password: { type: 'string', format: 'password', example: 'MiPassword123' },
         },
     },
+    UserDocumentUploadRequest: {
+        type: 'object',
+        description:
+            'multipart/form-data. IMPORTANTE: el campo "type" debe enviarse antes que "document" en el formulario, para que el servidor pueda elegir la carpeta de destino correctamente.',
+        required: ['document', 'type'],
+        properties: {
+            type: {
+                type: 'string',
+                enum: [DOCUMENT_TYPES.USER_DOCUMENT, DOCUMENT_TYPES.DRIVER_LICENSE],
+                example: DOCUMENT_TYPES.USER_DOCUMENT,
+            },
+            document: {
+                type: 'string',
+                format: 'binary',
+                description: 'Archivo a subir. Tipos permitidos: PDF, JPEG, PNG, WEBP. Tamaño maximo: 5MB.',
+            },
+        },
+    },
 
     // ---------- Products ----------
     Product: {
         type: 'object',
         properties: {
-            _id: { type: 'string', example: '64a1f2e5c3b4d5e6f7g8h9i1' },
+            _id: { type: 'string', example: '64a1f2e5c3b4d5e6f7a8b9c1' },
             name: { type: 'string', example: 'Caja de carton mediana' },
             description: { type: 'string', example: 'Caja reforzada para envios de hasta 10kg' },
             price: { type: 'number', example: 1500 },
@@ -209,7 +248,7 @@ const schemas = {
     Order: {
         type: 'object',
         properties: {
-            _id: { type: 'string', example: '64a1f2e5c3b4d5e6f7g8h9i2' },
+            _id: { type: 'string', example: '64a1f2e5c3b4d5e6f7a8b9c2' },
             user: {
                 type: 'string',
                 description: 'ObjectId del usuario que hizo el pedido',
@@ -219,8 +258,25 @@ const schemas = {
             address: { type: 'string', example: 'Av. Siempre Viva 742' },
             status: { type: 'string', enum: Object.values(ORDER_STATUS), example: ORDER_STATUS.PENDING },
             priority: { type: 'string', enum: Object.values(ORDER_PRIORITY), example: ORDER_PRIORITY.MEDIUM },
+            proof: {
+                nullable: true,
+                description: 'Comprobante de entrega asociado al pedido. null si todavia no se cargo ninguno.',
+                allOf: [{ $ref: '#/components/schemas/DocumentMetadata' }],
+            },
             createdAt: { type: 'string', format: 'date-time' },
             updatedAt: { type: 'string', format: 'date-time' },
+        },
+    },
+    ProofUploadRequest: {
+        type: 'object',
+        description: 'multipart/form-data.',
+        required: ['proof'],
+        properties: {
+            proof: {
+                type: 'string',
+                format: 'binary',
+                description: 'Archivo del comprobante. Tipos permitidos: PDF, JPEG, PNG, WEBP. Tamaño maximo: 5MB.',
+            },
         },
     },
     OrderStatusUpdateRequest: {
@@ -235,7 +291,7 @@ const schemas = {
     Delivery: {
         type: 'object',
         properties: {
-            _id: { type: 'string', example: '64a1f2e5c3b4d5e6f7g8h9i3' },
+            _id: { type: 'string', example: '64a1f2e5c3b4d5e6f7a8b9c3' },
             order: {
                 type: 'string',
                 description: 'ObjectId del pedido asociado',
@@ -245,7 +301,7 @@ const schemas = {
                 type: 'string',
                 nullable: true,
                 description: 'ObjectId del repartidor asignado. null si todavia no tiene uno.',
-                example: '64a1f2e5c3b4d5e6f7g8h9i4',
+                example: '64a1f2e5c3b4d5e6f7a8b9c4',
             },
             status: { type: 'string', enum: Object.values(DELIVERY_STATUS), example: DELIVERY_STATUS.ASSIGNED },
             createdAt: { type: 'string', format: 'date-time' },
@@ -361,6 +417,11 @@ const responses = {
         ERROR_CODES.USER_NOT_FOUND,
         'El usuario no fue encontrado'
     ),
+    UserDocumentUploadedResponse: successResponse(
+        'Documento cargado y asociado al usuario',
+        { $ref: '#/components/schemas/User' },
+        undefined
+    ),
 
     // ---------- Products ----------
     ProductListResponse: successResponse('Lista de productos', {
@@ -399,6 +460,10 @@ const responses = {
         'El estado enviado no es un estado valido para un pedido',
         ERROR_CODES.INVALID_ORDER_STATUS,
         "El estado 'entregado' no es válido. Estados permitidos: pending, in_progress, delivered, cancelled"
+    ),
+    OrderProofUploadedResponse: successResponse(
+        'Comprobante cargado y asociado al pedido',
+        { $ref: '#/components/schemas/Order' }
     ),
 
     // ---------- Deliveries ----------
@@ -490,6 +555,28 @@ const responses = {
         'Error inesperado del servidor',
         ERROR_CODES.INTERNAL_SERVER_ERROR,
         'Error interno del servidor'
+    ),
+
+    // ---------- Uploads (Multer), reutilizados por Users y Orders ----------
+    FileRequiredResponse: errorResponse(
+        'No se envio ningun archivo en el campo esperado',
+        ERROR_CODES.FILE_REQUIRED,
+        'Debe adjuntar un archivo'
+    ),
+    InvalidFileTypeResponse: errorResponse(
+        'El tipo de archivo enviado no esta permitido',
+        ERROR_CODES.INVALID_FILE_TYPE,
+        'El tipo de archivo no esta permitido'
+    ),
+    FileTooLargeResponse: errorResponse(
+        'El archivo supera el tamaño maximo permitido',
+        ERROR_CODES.FILE_TOO_LARGE,
+        'El archivo supera el tamaño maximo permitido (5MB)'
+    ),
+    InvalidDocumentTypeResponse: errorResponse(
+        'El campo type no fue enviado o no es uno de los valores permitidos',
+        ERROR_CODES.INVALID_DOCUMENT_TYPE,
+        'El tipo de documento indicado no es valido'
     ),
 };
 
