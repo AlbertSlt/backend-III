@@ -1,6 +1,7 @@
 node_modules
-.env
-.env.test
+.env*
+!.env.example
+!.env.test.example
 logs/
 uploads/*
 !uploads/*/

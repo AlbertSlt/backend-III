@@ -3,10 +3,13 @@ paths:
     get:
       tags:
         - Products
-      summary: Obtener productos disponibles
+      summary: Obtener productos disponibles (paginado)
       description: >
-        Devuelve unicamente los productos con status "available". Los
+        Devuelve una pagina de productos con status "available". Los
         productos "out_of_stock" no se incluyen en este listado.
+      parameters:
+        - $ref: '#/components/parameters/PageQueryParam'
+        - $ref: '#/components/parameters/LimitQueryParam'
       responses:
         '200':
           $ref: '#/components/responses/ProductListResponse'

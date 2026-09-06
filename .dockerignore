@@ -1,0 +1,31 @@
+# Dependencias (se reinstalan dentro del contenedor con npm ci)
+node_modules
+
+# Variables de entorno: nunca deben viajar dentro de la imagen // Se inyectan en runtime con --env-file al hacer docker run.
+.env
+.env.test
+.env.example
+.env.test.example
+
+# Control de versiones
+.git
+.gitignore
+
+# Logs generados por la app (Winston). No son parte del codigo fuente.
+logs
+*.log
+
+# Archivos subidos por Multer en desarrollo/testing local.
+uploads
+
+# Tests: no hacen falta para correr la API en produccion.
+test
+.mocharc.json
+
+# Archivos de cobertura, si se llegaran a generar
+coverage
+
+# Archivos de IDE/OS
+.vscode
+.idea
+*.DS_Store

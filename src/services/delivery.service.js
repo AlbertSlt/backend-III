@@ -1,10 +1,18 @@
 import DeliveryRepository from '../repositories/delivery.repository.js';
 import { DELIVERY_STATUS } from '../utils/constants.js';
 import { AppError, ERROR_CODES } from '../errors/index.js';
+import { parsePagination, buildPaginationMeta } from '../utils/pagination.js';
 
 class DeliveryService {
     async getAllDeliveries(query) {
-        return await DeliveryRepository.getAll(query);
+        const { page, limit, filters } = parsePagination(query);
+
+        const { data, total } = await DeliveryRepository.findPaginated(filters, { page, limit });
+
+        return {
+            data,
+            meta: buildPaginationMeta({ page, limit, total })
+        };
     }
 
     async getDeliveryById(id) {

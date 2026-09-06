@@ -1,10 +1,18 @@
 import UserRepository from "../repositories/user.repository.js";
 import { AppError, ERROR_CODES } from "../errors/index.js";
+import { parsePagination, buildPaginationMeta } from "../utils/pagination.js";
 import logger from "../config/logger.js";
 
 class UserService {
     async getAllUsers(query) {
-        return await UserRepository.find(query);
+        const { page, limit, filters } = parsePagination(query);
+
+        const { data, total } = await UserRepository.findPaginated(filters, { page, limit });
+
+        return {
+            data,
+            meta: buildPaginationMeta({ page, limit, total })
+        };
     }
 
     async getUserById(id) {

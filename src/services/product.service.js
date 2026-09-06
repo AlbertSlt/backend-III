@@ -1,12 +1,20 @@
 import ProductRepository from '../repositories/product.repository.js';
 import { PRODUCT_STATUS } from '../utils/constants.js';
 import { AppError, ERROR_CODES } from '../errors/index.js';
-
+import { parsePagination, buildPaginationMeta } from '../utils/pagination.js';
 
 class ProductService {
-    async getAllProducts() {
-        const filter = { status: PRODUCT_STATUS.AVAILABLE };
-        return await ProductRepository.getAll(filter);
+    async getAllProducts(query) {
+        const { page, limit, filters } = parsePagination(query);
+
+        const finalFilters = { ...filters, status: PRODUCT_STATUS.AVAILABLE };
+
+        const { data, total } = await ProductRepository.findPaginated(finalFilters, { page, limit });
+
+        return {
+            data,
+            meta: buildPaginationMeta({ page, limit, total })
+        };
     }
 
     async getProductById(id) {

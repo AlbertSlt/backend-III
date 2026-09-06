@@ -11,6 +11,7 @@ import userRoutes from "./routes/users.routes.js";
 import productRoutes from "./routes/products.routes.js";
 import orderRoutes from "./routes/orders.routes.js";
 import deliveryRoutes from "./routes/deliveries.routes.js";
+import healthRoutes from "./routes/health.routes.js";
 
 import { errorHandler, notFoundHandler } from "./middlewares/error.middleware.js";
 
@@ -18,6 +19,7 @@ export const app = express();
 
 app.use(express.json());
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+app.use(healthRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);

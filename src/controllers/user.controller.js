@@ -3,8 +3,8 @@ import UserService from "../services/user.service.js";
 class UserController {
     static async getAllUsers(req, res, next) {
         try {
-            const users = await UserService.getAllUsers(req.query);
-            res.status(200).json({ status: "success", payload: users });
+            const { data, meta } = await UserService.getAllUsers(req.query);
+            res.status(200).json({ status: "success", payload: data, ...meta });
         } catch (error) {
             next(error);
         }

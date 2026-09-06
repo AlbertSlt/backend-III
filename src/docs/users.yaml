@@ -3,13 +3,16 @@ paths:
     get:
       tags:
         - Users
-      summary: Obtener todos los usuarios
+      summary: Obtener todos los usuarios (paginado)
       description: >
-        Devuelve la lista completa de usuarios registrados. El query string
-        se pasa directo como filtro de Mongo, por eso se puede filtrar por
-        role (y en general por cualquier campo del modelo User, excepto
-        password que nunca se devuelve).
+        Devuelve una pagina de usuarios registrados. El query string se pasa
+        como filtro de Mongo (excepto page/limit, que controlan la
+        paginacion), por eso se puede filtrar por role (y en general por
+        cualquier campo del modelo User, excepto password que nunca se
+        devuelve).
       parameters:
+        - $ref: '#/components/parameters/PageQueryParam'
+        - $ref: '#/components/parameters/LimitQueryParam'
         - name: role
           in: query
           required: false

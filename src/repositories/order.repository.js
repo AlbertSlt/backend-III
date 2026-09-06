@@ -3,8 +3,15 @@ import Order from '../models/order.model.js';
 const DEFAULT_PROJECTION = '-__v';
 
 class OrderRepository {
-    async getAll(filter = {}) {
-        return await Order.find(filter).select(DEFAULT_PROJECTION);
+    async findPaginated(filters = {}, { page, limit } = {}) {
+        const skip = (page - 1) * limit;
+
+        const [data, total] = await Promise.all([
+            Order.find(filters).select(DEFAULT_PROJECTION).skip(skip).limit(limit),
+            Order.countDocuments(filters)
+        ]);
+
+        return { data, total };
     }
 
     async getById(id) {

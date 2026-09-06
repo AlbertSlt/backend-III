@@ -1,0 +1,15 @@
+paths:
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Verificar que la API esta activa
+      description: >
+        Endpoint de infraestructura, no de negocio. Util para Docker,
+        balanceadores de carga o herramientas de monitoreo. Disponible
+        siempre, incluso en produccion: no expone informacion sensible
+        (nada de URIs de base de datos, variables de entorno, ni detalles
+        internos del servidor).
+      responses:
+        '200':
+          $ref: '#/components/responses/HealthCheckResponse'

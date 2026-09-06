@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "src/server.js",
   "scripts": {
+    "start": "node src/server.js",
     "dev": "node --watch src/server.js",
     "test": "cross-env NODE_ENV=test mocha"
   },
@@ -11,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@faker-js/faker": "^10.5.0",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "mongoose": "^9.7.4",
@@ -21,7 +23,6 @@
     "winston-daily-rotate-file": "^5.0.0"
   },
   "devDependencies": {
-    "@faker-js/faker": "^10.5.0",
     "chai": "^6.2.2",
     "cross-env": "^7.0.3",
     "mocha": "^11.8.0",

@@ -351,3 +351,143 @@ Ambos endpoints están documentados como `multipart/form-data` en `/api/docs`, b
 Los archivos de prueba usados en los tests (`test/fixtures/document.pdf`, `test/fixtures/invalid.txt`) se adjuntan como `Buffer` en memoria (no como ruta de archivo), para evitar un problema conocido de `superagent` en Windows donde adjuntar un archivo leído desde disco puede abortar la petición espuriamente.
 
 **Nota:** Multer guarda el archivo en disco tan pronto pasa su `fileFilter` (validación de tipo/tamaño), **antes** de que corran las validaciones posteriores (tipo de documento inválido, id con formato inválido, entidad inexistente). Cualquiera de esos casos puede terminar en un error 400/404 dejando el archivo ya guardado en disco pero sin asociar a nada. Es una limitación conocida (fuera del alcance de esta pre-entrega); para no ensuciar `uploads/`, los tests leen el listado de archivos de `uploads/documents` y `uploads/proofs` antes de correr la suite y lo vuelven a leer al final, y borran los archivos que aparecen en la segunda lectura pero no en la primera (es decir, cualquier archivo generado durante la corrida, sin importar qué test específico lo haya creado).
+
+
+## Módulo 8 - Performance, escalabilidad y Docker
+
+Se revisó el proyecto en tres ejes: performance (paginación de listados), preparación para producción (variables de entorno, health check, criterio sobre endpoints internos) y Docker (imagen, `.dockerignore`, instrucciones de build/run).
+
+### Paginación
+
+Los 4 endpoints de listado (`GET /api/users`, `GET /api/products`, `GET /api/orders`, `GET /api/deliveries`) ya no devuelven la colección completa: aceptan `page` y `limit` como query params y devuelven la página correspondiente junto con la metadata necesaria para construir la paginación en el cliente.
+
+```
+GET /api/orders?page=2&limit=5
+```
+
+```json
+{
+  "status": "success",
+  "payload": [ /* hasta 5 pedidos */ ],
+  "page": 2,
+  "limit": 5,
+  "total": 23,
+  "totalPages": 5
+}
+```
+
+- `page` y `limit` son opcionales. Por defecto: `page=1`, `limit=10`.
+- `limit` tiene un tope máximo de 100 (evita que se pida `limit=999999` y se anule el propósito de paginar).
+- Valores inválidos (texto, negativos, cero) caen silenciosamente al valor por defecto en vez de responder error — es un criterio de UX para paginación (a diferencia de `INVALID_MOCK_AMOUNT`, que sí es estricto porque ahí el número define cuántos datos *se crean*, no cuántos se listan).
+- El resto del query string se sigue usando como filtro real de Mongo (ej. `?status=pending`, `?role=courier`), igual que antes de agregar paginación.
+- Implementado en `src/utils/pagination.js` (helper compartido) + un método `findPaginated` por repositorio (`user.repository.js`, `product.repository.js`, `order.repository.js`, `delivery.repository.js`), que hace `find().skip().limit()` y `countDocuments()` en paralelo con `Promise.all`.
+
+### Otras revisiones de performance
+
+- La carga de archivos con Multer ya tenía límites desde el Módulo 7 (tamaño máximo 5MB, tipos MIME restringidos) — no se modificó, ya cumplía el criterio.
+- No hay operaciones sincrónicas pesadas que bloqueen el Event Loop en ningún endpoint.
+- El logger no registra bodies completos ni información sensible (ver Módulo 4).
+
+### Variables de entorno
+
+| Variable | Ejemplo | Obligatoria | Descripción |
+|---|---|---|---|
+| `PORT` | `3000` | Sí | Puerto en el que escucha la API |
+| `MONGODB_URI` | `mongodb://localhost:27017/shipnow` | Sí | Cadena de conexión a MongoDB |
+| `NODE_ENV` | `development` / `test` / `production` | Sí | Entorno de ejecución |
+| `SEED_ADMIN` | `true` / `false` | No | Si es `true`, crea un usuario admin al arrancar (ver `seedAdmin.js`) |
+| `ADMIN_EMAIL` | `admin@shipnow.com` | Solo si `SEED_ADMIN=true` | Email del admin sembrado |
+| `ADMIN_PASSWORD` | `pass123` | Solo si `SEED_ADMIN=true` | Password del admin sembrado |
+
+`env.config.js` valida `PORT`, `MONGODB_URI` y `NODE_ENV` al arrancar: si falta alguna, la app **no arranca** y lanza un error descriptivo (`Missing required environment variable: ...`) en vez de arrancar en un estado incompleto.
+
+**No aplican al proyecto** (se aclara explícitamente para que quede claro que no se dejaron pasar por alto):
+- `JWT_SECRET`: no hay autenticación con JWT implementada en el proyecto.
+- URLs de servicios externos: no hay integraciones con servicios de terceros (email, pagos, storage externo, etc.).
+- `LOG_LEVEL`: el nivel mínimo de log ya se controla con `NODE_ENV` (ver Módulo 4: desarrollo muestra desde `debug`, producción desde `info`), no se agregó una variable separada para no duplicar ese criterio.
+
+### Health check
+
+```
+GET /health
+```
+
+```json
+{
+  "status": "success",
+  "environment": "development",
+  "uptime": 123.456,
+  "timestamp": "2026-09-04T20:00:00.000Z"
+}
+```
+
+No expone información sensible (nada de URIs, variables de entorno reales, ni detalles internos del servidor). Pensado para ser consultado por Docker, balanceadores de carga o herramientas de monitoreo. Documentado en Swagger bajo el tag **Health**.
+
+### Criterio sobre endpoints internos
+
+| Endpoint | Disponible en producción | Motivo |
+|---|---|---|
+| `/health` | Sí, siempre | Es infraestructura pura: no expone datos ni tiene efectos secundarios. |
+| `/api/docs` (Swagger) | Sí, siempre | Es documentación de solo lectura; no modifica datos ni expone secretos. |
+| `/api/mocks/*` | No (`NODE_ENV !== "production"`) | Inserta datos falsos en la base real; peligroso si quedara accesible en producción. |
+| `/api/logger-test` | No (`NODE_ENV !== "production"`) | Es una herramienta de desarrollo para validar el logger, no una funcionalidad de negocio. |
+
+Este criterio ya estaba parcialmente implementado desde módulos anteriores (`app.js` gatea `mocks` y `logger-test` con `if (config.NODE_ENV !== "production")`); en este módulo se lo documenta explícitamente y se verificó en la práctica (ver sección Docker más abajo).
+
+### Docker
+
+**Archivos:** `dockerfile` (imagen) y `.dockerignore` (qué no copiar dentro de la imagen).
+
+El Dockerfile:
+- Parte de `node:22-alpine` (liviana; Mongoose 9.x requiere Node ≥ 20.19).
+- Copia primero `package.json` + `package-lock.json` e instala con `npm ci --omit=dev` (build reproducible, sin dependencias de desarrollo como Mocha/Chai/Supertest).
+- Copia el resto del código.
+- Expone el puerto `3000`.
+- Arranca con `npm start` (script agregado en `package.json`, ejecuta `node src/server.js`).
+- **No tiene ningún secreto ni URI de base de datos hardcodeada**: todas las variables se pasan en tiempo de ejecución.
+
+**Nota:** `@faker-js/faker` está en `dependencies` (no en `devDependencies`), a pesar de no ser una librería típica de producción. Esto es intencional: `app.js` importa el router de mocks de forma incondicional (aunque su uso esté gateado por `NODE_ENV`), y como los imports de ES Modules se resuelven al cargar el archivo, `@faker-js/faker` tiene que estar disponible siempre para que el servidor arranque, sin importar el entorno.
+
+El `.dockerignore` excluye: `node_modules`, los archivos `.env*`, `.git`, `logs/`, `uploads/`, `test/`, `.mocharc.json` y `coverage` — nada de eso debe viajar dentro de la imagen.
+
+#### Construir la imagen
+
+```bash
+docker build -t shippow-api .
+```
+
+#### Ejecutar el contenedor
+
+Con un archivo de variables de entorno preparado (mismo formato que `.env.example`):
+
+```bash
+docker run -p 3000:3000 --env-file .env shippow-api
+```
+
+**Importante — MongoDB corriendo en el host (Windows/Mac):** si tu MongoDB corre localmente en tu máquina (no dentro de un contenedor) y usás `MONGODB_URI=mongodb://localhost:27017/...`, esa URI **no va a funcionar dentro del contenedor**. Dentro de un contenedor, `localhost` apunta al propio contenedor, no a tu PC. Docker Desktop (Windows/Mac) expone un nombre especial para esto:
+
+```
+MONGODB_URI=mongodb://host.docker.internal:27017/shipnow
+```
+
+Usá esa variante en el archivo de entorno que le pasás al contenedor (podés mantener un archivo separado, ej. `.env.docker`, sin tocar tu `.env` de desarrollo local).
+
+La API queda disponible en `http://localhost:3000`. Para probar rápido que todo levantó bien:
+
+```bash
+curl http://localhost:3000/health
+curl http://localhost:3000/api/docs
+curl http://localhost:3000/api/products
+```
+
+**Recordatorio:** al correr en modo `production`, `/api/mocks` y `/api/logger-test` no van a estar disponibles (devuelven 404, ver criterio de endpoints internos más arriba) — para probar el flujo completo con datos de prueba, correr el contenedor con `NODE_ENV=development` en el archivo de entorno usado.
+
+### Qué no debe subirse al repositorio ni a la imagen
+
+Ya cubierto por `.gitignore` y `.dockerignore` respectivamente, pero para que quede explícito en un solo lugar:
+
+- `node_modules/`
+- Cualquier archivo `.env*` real (`.env`, `.env.test`, `.env.docker`, etc.) — solo se versionan `.env.example` y `.env.test.example`, sin valores sensibles reales
+- `logs/` (archivos generados por Winston)
+- `uploads/*` (archivos subidos por Multer; solo se versiona la estructura de carpetas vía `.gitkeep`)
+- `coverage/` (si se llegara a generar)

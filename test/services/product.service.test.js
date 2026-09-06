@@ -1,9 +1,8 @@
-//mocha no necesita importarse
 import { expect } from 'chai';
 import ProductService from '../../src/services/product.service.js';
 import { PRODUCT_STATUS } from '../../src/utils/constants.js';
 
-describe('test unitario sobre ProductService', function () {//aca podria ir funcion flecha, pero no se recomienda por el tema del this
+describe('test unitario sobre ProductService', function () {
 
     let productId;
 
@@ -25,9 +24,15 @@ describe('test unitario sobre ProductService', function () {//aca podria ir func
     });
 
         //test obtener todos
-    it('Se deben obtener todos los productos de la base de datos', async function () {
-        const products = await ProductService.getAllProducts();
-        expect(products).to.be.an('array');
+    it('Se deben obtener todos los productos paginados, con su metadata', async function () {
+        const result = await ProductService.getAllProducts();
+
+        expect(result).to.have.property('data').that.is.an('array');
+        expect(result).to.have.property('meta');
+        expect(result.meta).to.have.property('page', 1);
+        expect(result.meta).to.have.property('limit', 10);
+        expect(result.meta).to.have.property('total').that.is.a('number');
+        expect(result.meta).to.have.property('totalPages').that.is.a('number');
     });
 
     it('Se debe obtener un producto por su id', async function () {

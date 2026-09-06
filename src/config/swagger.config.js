@@ -37,6 +37,31 @@ const successResponse = (description, payloadSchema, messageExample) => {
     };
 };
 
+// Igual que successResponse, pero además agrega la metadata de paginación
+// (page, limit, total, totalPages) que devuelven los 4 endpoints de listado.
+const paginatedListResponse = (description, itemSchema) => ({
+    description,
+    content: {
+        'application/json': {
+            schema: {
+                allOf: [
+                    { $ref: '#/components/schemas/SuccessResponse' },
+                    {
+                        type: 'object',
+                        properties: {
+                            payload: { type: 'array', items: itemSchema },
+                            page: { type: 'integer', example: 1 },
+                            limit: { type: 'integer', example: 10 },
+                            total: { type: 'integer', example: 42 },
+                            totalPages: { type: 'integer', example: 5 },
+                        },
+                    },
+                ],
+            },
+        },
+    },
+});
+
 const messageOnlyResponse = (description, messageExample) => ({
     description,
     content: {
@@ -105,6 +130,22 @@ const schemas = {
             status: { type: 'string', example: 'success' },
             message: { type: 'string' },
             payload: { description: 'Contenido especifico de la respuesta, definido en cada endpoint' },
+        },
+    },
+
+    HealthResponse: {
+        type: 'object',
+        description:
+            'Estado basico de la API. No expone informacion sensible (sin URIs de base de datos, variables de entorno reales, ni detalles internos del servidor).',
+        properties: {
+            status: { type: 'string', example: 'success' },
+            environment: { type: 'string', example: 'development' },
+            uptime: {
+                type: 'number',
+                example: 12.345,
+                description: 'Segundos transcurridos desde que arranco el proceso de Node.',
+            },
+            timestamp: { type: 'string', format: 'date-time' },
         },
     },
 
@@ -404,9 +445,8 @@ const schemas = {
 
 const responses = {
     // ---------- Users ----------
-    UserListResponse: successResponse('Lista de usuarios', {
-        type: 'array',
-        items: { $ref: '#/components/schemas/User' },
+    UserListResponse: paginatedListResponse('Lista paginada de usuarios', {
+        $ref: '#/components/schemas/User',
     }),
     UserDetailResponse: successResponse('Usuario encontrado', { $ref: '#/components/schemas/User' }),
     UserCreatedResponse: successResponse('Usuario creado correctamente', { $ref: '#/components/schemas/User' }),
@@ -424,9 +464,8 @@ const responses = {
     ),
 
     // ---------- Products ----------
-    ProductListResponse: successResponse('Lista de productos', {
-        type: 'array',
-        items: { $ref: '#/components/schemas/Product' },
+    ProductListResponse: paginatedListResponse('Lista paginada de productos disponibles', {
+        $ref: '#/components/schemas/Product',
     }),
     ProductDetailResponse: successResponse('Producto encontrado', { $ref: '#/components/schemas/Product' }),
     ProductCreatedResponse: successResponse('Producto creado correctamente', {
@@ -443,9 +482,8 @@ const responses = {
     ),
 
     // ---------- Orders ----------
-    OrderListResponse: successResponse('Lista de pedidos', {
-        type: 'array',
-        items: { $ref: '#/components/schemas/Order' },
+    OrderListResponse: paginatedListResponse('Lista paginada de pedidos', {
+        $ref: '#/components/schemas/Order',
     }),
     OrderDetailResponse: successResponse('Pedido encontrado', { $ref: '#/components/schemas/Order' }),
     OrderStatusUpdatedResponse: successResponse('Estado del pedido actualizado', {
@@ -467,9 +505,8 @@ const responses = {
     ),
 
     // ---------- Deliveries ----------
-    DeliveryListResponse: successResponse('Lista de entregas', {
-        type: 'array',
-        items: { $ref: '#/components/schemas/Delivery' },
+    DeliveryListResponse: paginatedListResponse('Lista paginada de entregas', {
+        $ref: '#/components/schemas/Delivery',
     }),
     DeliveryDetailResponse: successResponse('Entrega encontrada', { $ref: '#/components/schemas/Delivery' }),
     DeliveryStatusUpdatedResponse: successResponse('Estado de la entrega actualizado', {
@@ -518,6 +555,16 @@ const responses = {
         { $ref: '#/components/schemas/MockDataSummary' },
         'Datos de prueba insertados correctamente'
     ),
+
+    // ---------- Health ----------
+    HealthCheckResponse: {
+        description: 'La API esta activa y respondiendo.',
+        content: {
+            'application/json': {
+                schema: { $ref: '#/components/schemas/HealthResponse' },
+            },
+        },
+    },
 
     // ---------- Logger ----------
     LoggerTestResponse: messageOnlyResponse(
@@ -598,6 +645,21 @@ const parameters = {
         schema: { type: 'integer', minimum: 1, maximum: 1000, default: 10 },
         description: 'Cantidad de registros a generar. Opcional, entre 1 y 1000. Por defecto 10.',
     },
+    PageQueryParam: {
+        name: 'page',
+        in: 'query',
+        required: false,
+        schema: { type: 'integer', minimum: 1, default: 1 },
+        description: 'Numero de pagina a obtener. Opcional. Valores invalidos caen al default (1).',
+    },
+    LimitQueryParam: {
+        name: 'limit',
+        in: 'query',
+        required: false,
+        schema: { type: 'integer', minimum: 1, maximum: 100, default: 10 },
+        description:
+            'Cantidad de resultados por pagina. Opcional, entre 1 y 100. Valores invalidos caen al default (10).',
+    },
 };
 
 // DEFINICIÓN GENERAL
@@ -619,6 +681,11 @@ const swaggerSpecs = swaggerJSDoc({
             },
         ],
         tags: [
+            {
+                name: 'Health',
+                description:
+                    'Estado de la API. Disponible en cualquier entorno, incluida produccion: no expone informacion sensible.',
+            },
             { name: 'Users', description: 'Gestion de usuarios (CRUD completo)' },
             { name: 'Products', description: 'Gestion de productos (CRUD completo)' },
             { name: 'Orders', description: 'Consulta de pedidos y actualizacion de su estado' },

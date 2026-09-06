@@ -3,12 +3,15 @@ paths:
     get:
       tags:
         - Deliveries
-      summary: Obtener todas las entregas
+      summary: Obtener todas las entregas (paginado)
       description: >
-        Devuelve la lista de entregas. El query string se pasa directo como
-        filtro de Mongo, por eso se puede filtrar por status (y en general
-        por cualquier campo del modelo Delivery).
+        Devuelve una pagina de entregas. El query string se pasa como filtro
+        de Mongo (excepto page/limit, que controlan la paginacion), por eso
+        se puede filtrar por status (y en general por cualquier campo del
+        modelo Delivery).
       parameters:
+        - $ref: '#/components/parameters/PageQueryParam'
+        - $ref: '#/components/parameters/LimitQueryParam'
         - name: status
           in: query
           required: false

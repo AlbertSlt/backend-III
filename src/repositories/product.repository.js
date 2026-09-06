@@ -1,12 +1,21 @@
 import Product from '../models/product.model.js';
 
+const DEFAULT_PROJECTION = '-__v';
+
 class ProductRepository {
-    async getAll(filter = {}) {
-        return await Product.find(filter).select('-__v');
+    async findPaginated(filters = {}, { page, limit } = {}) {
+        const skip = (page - 1) * limit;
+
+        const [data, total] = await Promise.all([
+            Product.find(filters).select(DEFAULT_PROJECTION).skip(skip).limit(limit),
+            Product.countDocuments(filters)
+        ]);
+
+        return { data, total };
     }
 
     async getById(id) {
-        return await Product.findById(id).select('-__v');
+        return await Product.findById(id).select(DEFAULT_PROJECTION);
     }
 
     async create(productData) {
@@ -14,7 +23,7 @@ class ProductRepository {
     }
 
     async update(id, updateData) {
-        return await Product.findByIdAndUpdate(id, updateData, { new: true });
+        return await Product.findByIdAndUpdate(id, updateData, { new: true }).select(DEFAULT_PROJECTION);
     }
 
     async delete(id) {
