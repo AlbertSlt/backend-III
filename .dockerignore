@@ -2,10 +2,12 @@
 node_modules
 
 # Variables de entorno: nunca deben viajar dentro de la imagen // Se inyectan en runtime con --env-file al hacer docker run.
-.env
-.env.test
-.env.example
-.env.test.example
+# Patron amplio (igual que .gitignore) para cubrir tambien .env.docker.local,
+# .env.docker.prod.local o cualquier variante futura, no solo los nombres
+# literales que existian al momento de escribir esto.
+.env*
+!.env.example
+!.env.test.example
 
 # Control de versiones
 .git

@@ -40,21 +40,34 @@ const fileFormat = winston.format.combine(
 
 const isProduction = config.NODE_ENV === "production";
 
+const transports = [
+    new DailyRotateFile({
+        filename: "logs/error-%DATE%.log",
+        datePattern: "YYYY-MM-DD",
+        level: "error",
+        maxFiles: "14d",
+        format: fileFormat,
+    }),
+    new DailyRotateFile({
+        filename: "logs/combined-%DATE%.log",
+        datePattern: "YYYY-MM-DD",
+        maxFiles: "14d",
+        format: fileFormat,
+    }),
+];
+
+if (!isProduction) {
+    transports.push(
+        new winston.transports.Console({
+            format: consoleFormat,
+        })
+    );
+}
+
 const logger = winston.createLogger({
     levels: customLevels.levels,
     level: isProduction ? "info" : "debug",
-    transports: [
-        new winston.transports.Console({
-            format: consoleFormat,
-        }),
-        new DailyRotateFile({
-            filename: "logs/errors-%DATE%.log",
-            datePattern: "YYYY-MM-DD",
-            level: "error", // captura 'error' y 'fatal' 
-            maxFiles: "14d",
-            format: fileFormat,
-        }),
-    ],
+    transports,
 });
 
 export default logger;

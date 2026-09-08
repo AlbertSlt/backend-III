@@ -1,0 +1,30 @@
+services:
+  mongo:
+    image: mongo:7
+    container_name: shippow-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    build:
+      context: .
+      dockerfile: dockerfile
+    container_name: shippow-api
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.docker.compose
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+volumes:
+  mongo_data:

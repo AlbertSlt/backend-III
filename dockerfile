@@ -1,27 +1,41 @@
 # ---------------------------------------------------------------------------
-# Ship-POW! API - Dockerfile
+# Ship-POW! API - Dockerfile (multi-stage)
 # ---------------------------------------------------------------------------
 
-# Imagen base: Node 22 sobre Alpine (liviana). Mongoose 9.x requiere Node >= 20.19.
-FROM node:22-alpine
+# --- Stage 1: deps ----------------------------------------------------------
+# Instala unicamente las dependencias de produccion en una etapa separada.
+# Esta capa se cachea de forma independiente del codigo fuente: mientras no
+# cambien package.json / package-lock.json, Docker reutiliza esta etapa
+# entera aunque el codigo cambie constantemente.
+FROM node:22-alpine AS deps
 
-# Directorio de trabajo dentro del contenedor
 WORKDIR /shippow
 
-# Copiamos primero los archivos de dependencias (package.json + package-lock.json)
 COPY package.json package-lock.json ./
 
 # npm ci instala exactamente lo que dice package-lock.json (build reproducible).
-# --omit=dev excluye devDependencies (mocha, chai, supertest, faker): no hacen
-# falta para correr la API en produccion.
+# --omit=dev excluye devDependencies (mocha, chai, supertest): no hacen falta
+# para correr la API en produccion.
 RUN npm ci --omit=dev
 
-# Copiamos el resto del codigo fuente. Lo que no deba entrar (node_modules,.env, logs, uploads locales, etc) queda filtrado por .dockerignore.
+
+# --- Stage 2: runtime ---------------------------------------------------
+# Imagen final: liviana, sin cache de npm ni devDependencies, solo lo
+# necesario para ejecutar la API.
+FROM node:22-alpine AS runtime
+
+WORKDIR /shippow
+
+# Copiamos SOLO el node_modules ya resuelto de la etapa "deps", no
+# arrastramos el cache de npm ni herramientas de instalacion a la imagen final.
+COPY --from=deps /shippow/node_modules ./node_modules
+
+# Copiamos el codigo fuente. Lo que no deba entrar (node_modules propio,
+# .env*, logs, uploads locales, etc) queda filtrado por .dockerignore.
 COPY . .
 
 # Puerto en el que escucha la app (definido por PORT en env.config.js).
-
 EXPOSE 3000
 
-# Entrypoint de produccion (agregado como script "start" en package.json).
+# Entrypoint de produccion (script "start" en package.json).
 CMD ["npm", "start"]
